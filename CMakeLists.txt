@@ -28,9 +28,9 @@ endif()
 # Include include directory - holding header files
 include_directories(include)
 
-# Include SDL2
-# find_package(SDL2 REQUIRED)
-# include_directories(${SDL2_INCLUDE_DIRS})
+# Include Curses
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIRS})
 
 # Executable
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -39,7 +39,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 add_subdirectory(src)
 
 # Link SDL2 library to the execustable
-# target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${CURSES_LIBRARIES})
 
 
 

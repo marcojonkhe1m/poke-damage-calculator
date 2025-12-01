@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ncurses.h>
 
 int main() {
   std::cout << "\n===================================" << std::endl;
