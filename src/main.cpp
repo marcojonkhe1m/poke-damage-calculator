@@ -1,3 +1,4 @@
+// vervang code met curses windows
 #include <iostream>
 #include <ncurses.h>
 
