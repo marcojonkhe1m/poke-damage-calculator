@@ -1,3 +1,7 @@
-#include <ncurses.h>
+#include "app.h"
 
-int main() { return 0; }
+int main() {
+  run_app();
+
+  return 0;
+}
