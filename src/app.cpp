@@ -2,6 +2,9 @@
 #include <curses.h>
 
 void run_app() {
+  WINDOW *win;
+  int startx, starty, width, height;
+
   init();
 
   bool running = true;
@@ -11,12 +14,15 @@ void run_app() {
 
   getmaxyx(stdscr, y, x);
 
-  y = y * 0.5;
-  x = (x * 0.5) - 6;
+  height = 6;
+  width = COLS - 1;
 
-  mvwprintw(stdscr, y, x, "Hello World!");
-  mvwprintw(stdscr, 2, 2, "Hello World!");
+  win = newwin(height, width, 1, 1);
   refresh();
+
+  box(win, 0, 0);
+  mvwprintw(win, 0, 1, "Pokemon Damage Calculator v 0.1");
+  wrefresh(win);
 
   // while (running) {
   //  handle_events
@@ -29,6 +35,7 @@ void run_app() {
   //  close_app();
 
   getch();
+  delwin(win);
   endwin();
 }
 
