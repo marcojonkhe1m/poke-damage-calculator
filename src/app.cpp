@@ -1,6 +1,8 @@
 #include "app.h"
 #include <curses.h>
 
+// voor de streak;
+//
 void run_app() {
   WINDOW *win;
   int startx, starty, width, height;
