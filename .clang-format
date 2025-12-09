@@ -1,0 +1,13 @@
+# Common settings
+BasedOnStyle: WebKit
+IndentWidth: 4
+
+# ---
+Language: Cpp
+
+# Configure each individual brace in BraceWrapping
+BreakBeforeBraces: Custom
+# Control of individual brace wrapping cases
+BraceWrapping: {
+    BeforeElse : 'true'
+}
