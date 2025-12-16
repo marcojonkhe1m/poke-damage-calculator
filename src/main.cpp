@@ -13,6 +13,7 @@ struct Window {
 WINDOW* create_bordered_window(struct Window* win_struct) {
     WINDOW* win = newwin(win_struct->height, win_struct->width, win_struct->starty, win_struct->startx);
     box(win, 0, 0);
+    keypad(win, TRUE);
 
     if (win_struct->title != NULL) {
         mvwprintw(win, 0, 2, "%s", win_struct->title);
@@ -39,6 +40,8 @@ int main() {
     initscr();
     cbreak();
     noecho();
+
+    keypad(stdscr, TRUE);
 
     refresh();
 
@@ -81,6 +84,8 @@ int main() {
     getch();
 
     destroy_window(main_win);
+    refresh();
+    endwin();
 
     return 0;
 }
