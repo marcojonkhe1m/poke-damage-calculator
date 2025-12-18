@@ -1,3 +1,4 @@
+#include "window_manager.h"
 #include <ncurses.h>
 #include <string.h>
 
@@ -30,6 +31,12 @@ void destroy_window(WINDOW* win) {
 int main() {
     int key;
     Window win = {};
+
+    // wm initialiser
+    WindowManager* window_manager = create_window_manager();
+    if (!window_manager) {
+        return -1;
+    }
 
     win.height = LINES;
     win.width = COLS;
