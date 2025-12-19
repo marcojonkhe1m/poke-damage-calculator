@@ -1,54 +1,34 @@
 #include "window_manager.h"
 #include "pane.h"
 
-struct WindowManager {
-    Pane* panes[5];
-    int pane_count;
-};
-
-// Gekozen voor een heap allocatie, terwijl er meestal maar 1 wm is, omdat dit de levenscyclus
-// van de wm expliciet maakt en dat ik er zelf controle over heb.
-WindowManager* create_window_manager() {
-    WindowManager* wm = new WindowManager;
-    return wm;
-}
-
-void destroy_window_manager(WindowManager* wm) {
-    for (int i = 0; i < wm->pane_count; i++) {
-        destroy_pane(wm->panes[i]);
-    }
-    delete wm;
-    return;
-}
-
-void add_pane(WindowManager* wm, Pane* pane) {
-    if (wm->pane_count == (sizeof(wm->panes) / sizeof(wm->panes[0]))) {
+void WmAddPane(window_manager* Wm, pane* Pane) {
+    if (Wm->PaneCount == (sizeof(Wm->Panes) / sizeof(Wm->Panes[0]))) {
         return;
     }
 
     // TODO (marco): z-index implementatie
-    wm->pane_count += 1;
-    wm->panes[wm->pane_count] = pane;
+    Wm->PaneCount += 1;
+    Wm->Panes[Wm->PaneCount] = Pane;
     return;
 }
 
-void remove_pane(WindowManager* wm, Pane* pane) {
-    int index = -1;
-    for (int i = 0; i < wm->pane_count; i++) {
-        if (wm->panes[i] == pane) {
-            index = i;
+void WmRemovePane(window_manager* Wm, pane* Pane) {
+    int Index = -1;
+    for (int i = 0; i < Wm->PaneCount; i++) {
+        if (Wm->Panes[i] == Pane) {
+            Index = i;
         }
 
-        if (index == -1) {
+        if (Index == -1) {
             return;
         }
 
-        for (int i = index; i < wm->pane_count - 1; i++) {
-            wm->panes[i] = wm->panes[i + 1];
+        for (int i = Index; i < Wm->PaneCount - 1; i++) {
+            Wm->Panes[i] = Wm->Panes[i + 1];
         }
-        wm->pane_count--;
+        Wm->PaneCount--;
     }
-    destroy_pane(pane);
+    DestroyPane(Pane);
 }
 
 /*

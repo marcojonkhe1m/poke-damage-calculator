@@ -2,15 +2,16 @@
 
 #include "pane.h"
 
-struct WindowManager;
+struct window_manager {
+    pane* Panes[5];
+    int PaneCount;
+};
 
-WindowManager* create_window_manager();
-void destroy_window_manager(WindowManager* wm);
+void WmAddPane(window_manager* Wm, pane* Pane);
+void WmRemovePane(window_manager* Wm, pane* Pane);
 
-void add_pane(WindowManager* wm, Pane* pane);
-void remove_pane(WindowManager* wm, Pane* pane);
-
-void set_focused_pane(WindowManager* wm, Pane* pane);
-void handle_input(WindowManager* wm, int key);
-void update_all(WindowManager* wm);
-void draw_all(WindowManager* wm);
+/*
+void WmMakePaneFocused(window_manager* Wm, pane* Pane);
+void WmHandleInput(window_manager* Wm, int Key);
+void WmUpdateAndRender(window_manager* Wm);
+*/

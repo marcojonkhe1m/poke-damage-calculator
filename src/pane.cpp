@@ -1,17 +1,18 @@
 #include "pane.h"
 
-WINDOW* create_pane(int height, int width, int starty, int startx) {
-    WINDOW* pane = newwin(height, width, starty, startx);
+WINDOW* CreatePane(pane* Pane) {
+    WINDOW* Window = newwin(Pane->Height, Pane->Width, Pane->StartY, Pane->StartX);
+    Pane->Window = Window;
 
     // Voor nu krijgen alle windows een border, dit wordt later in draw geregeld en met focus.
-    box(pane, starty, startx);
-    wrefresh(pane);
+    box(Window, Pane->StartY, Pane->StartX);
+    wrefresh(Window);
 
-    return pane;
+    return Window;
 };
 
-void destroy_pane(Pane* pane) {
-    wclear(pane->window);
-    wrefresh(pane->window);
-    delwin(pane->window);
+void DestroyPane(pane* Pane) {
+    wclear(Pane->Window);
+    wrefresh(Pane->Window);
+    delwin(Pane->Window);
 };

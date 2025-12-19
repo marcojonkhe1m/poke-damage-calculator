@@ -2,13 +2,13 @@
 
 #include <ncurses.h>
 
-struct Pane {
-    int height;
-    int width;
-    int starty;
-    int startx;
-    WINDOW* window;
+struct pane {
+    int Height;
+    int Width;
+    int StartY;
+    int StartX;
+    WINDOW* Window;
 };
 
-WINDOW* create_pane(int height, int width, int starty, int startx);
-void destroy_pane(Pane* pane);
+WINDOW* PaneCreateWindow(pane* Pane);
+void DestroyPane(pane* Pane);

@@ -1,49 +1,11 @@
 #include "window_manager.h"
-#include <ncurses.h>
 #include <string.h>
-
-// TODO (marco): wil ik de ncurses window * in de struct zetten?
-struct Window {
-    int height;
-    int width;
-    int starty;
-    int startx;
-    const char* title;
-};
-
-WINDOW* create_bordered_window(struct Window* win_struct) {
-    WINDOW* win = newwin(win_struct->height, win_struct->width, win_struct->starty, win_struct->startx);
-    box(win, 0, 0);
-    keypad(win, TRUE);
-
-    if (win_struct->title != NULL) {
-        mvwprintw(win, 0, 2, "%s", win_struct->title);
-    }
-    wrefresh(win);
-
-    return win;
-}
-
-void destroy_window(WINDOW* win) {
-    delwin(win);
-}
 
 int main() {
     int key;
-    Window win = {};
+    window_manager WindowManager {};
 
-    // wm initialiser
-    WindowManager* window_manager = create_window_manager();
-    if (!window_manager) {
-        return -1;
-    }
-
-    win.height = LINES;
-    win.width = COLS;
-    win.starty = 0;
-    win.startx = 0;
-    win.title = " Pokemon Damage Calculator v0.1 ";
-
+    // init ncurses
     initscr();
     cbreak();
     noecho();
@@ -52,7 +14,9 @@ int main() {
 
     refresh();
 
-    WINDOW* main_win = create_bordered_window(&win);
+    // init panes
+    pane MainPane {};
+    createPane(&MainPane
 
     while (1) {
         key = wgetch(main_win);
