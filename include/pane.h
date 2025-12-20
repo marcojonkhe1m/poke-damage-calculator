@@ -10,5 +10,5 @@ struct pane {
     WINDOW* Window;
 };
 
-WINDOW* PaneCreateWindow(pane* Pane);
-void DestroyPane(pane* Pane);
+pane* PaneInit(pane* Pane);
+void PaneDestroy(pane* Pane);

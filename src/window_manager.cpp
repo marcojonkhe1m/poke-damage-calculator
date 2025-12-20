@@ -28,7 +28,7 @@ void WmRemovePane(window_manager* Wm, pane* Pane) {
         }
         Wm->PaneCount--;
     }
-    DestroyPane(Pane);
+    PaneDestroy(Pane);
 }
 
 /*

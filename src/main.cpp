@@ -16,7 +16,14 @@ int main() {
 
     // init panes
     pane MainPane {};
-    createPane(&MainPane
+    MainPane.Height = LINES;
+    MainPane.Width = COLS;
+
+    if (!PaneInit(&MainPane)) {
+        return -1;
+    }
+
+    WmAddPane(&WindowManager, &MainPane);
 
     while (1) {
         key = wgetch(main_win);
