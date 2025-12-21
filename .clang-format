@@ -11,3 +11,6 @@ BreakBeforeBraces: Custom
 BraceWrapping: {
     BeforeElse : 'true'
 }
+
+# Pointer alignment next to variable name
+PointerAlignment: Right

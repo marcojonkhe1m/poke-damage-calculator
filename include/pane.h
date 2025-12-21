@@ -7,8 +7,10 @@ struct pane {
     int Width;
     int StartY;
     int StartX;
-    WINDOW* Window;
+    WINDOW *Window;
 };
 
-pane* PaneInit(pane* Pane);
-void PaneDestroy(pane* Pane);
+pane *PaneInit(pane *Pane);
+void PaneDestroy(pane *Pane);
+
+void PaneHandleInput(pane *Pane, int Key);

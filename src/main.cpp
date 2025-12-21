@@ -1,8 +1,7 @@
 #include "window_manager.h"
-#include <string.h>
 
 int main() {
-    int key;
+    int Key;
     window_manager WindowManager {};
 
     // init ncurses
@@ -25,43 +24,22 @@ int main() {
 
     WmAddPane(&WindowManager, &MainPane);
 
-    while (1) {
-        key = wgetch(main_win);
-        const char* text;
+    bool Running = true;
 
-        switch (key) {
-        case KEY_UP:
-            text = "arrow up pressed";
-            mvwprintw(main_win, LINES / 2, (COLS - strlen(text)) / 2, "%s", text);
-            wrefresh(main_win);
-            break;
-        case KEY_DOWN:
-            text = "arrow down pressed";
-            mvwprintw(main_win, LINES / 2, (COLS - strlen(text)) / 2, "%s", text);
-            wrefresh(main_win);
-            break;
-        case KEY_LEFT:
-            text = "arrow left pressed";
-            mvwprintw(main_win, LINES / 2, (COLS - strlen(text)) / 2, "%s", text);
-            wrefresh(main_win);
-            break;
-        case KEY_RIGHT:
-            text = "arrow right pressed";
-            mvwprintw(main_win, LINES / 2, (COLS - strlen(text)) / 2, "%s", text);
-            wrefresh(main_win);
-            break;
-        default:
-            text = "press an arrow key";
-            mvwprintw(main_win, LINES / 2, (COLS - strlen(text)) / 2, "%s", text);
-            wrefresh(main_win);
-            break;
+    while (Running) {
+        Key = getch();
+        const char *text;
+
+        if (Key != KEY_F(1)) {
+            WmHandleInput(&WindowManager, Key);
         }
-        break;
+
+        else {
+            Running = false;
+        }
     }
 
-    getch();
-
-    destroy_window(main_win);
+    WmDestroy(&WindowManager);
     refresh();
     endwin();
 
