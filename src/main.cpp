@@ -1,5 +1,6 @@
 #include "window_manager.h"
 
+// random comment for the streak;
 int main() {
     int Key;
     window_manager WindowManager {};
