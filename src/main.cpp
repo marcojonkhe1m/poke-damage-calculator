@@ -6,7 +6,6 @@
 int main() {
     int Key;
     window_manager WindowManager {};
-    const char *File = "data/helloworld.txt";
 
     // init ncurses
     initscr();
@@ -34,8 +33,13 @@ int main() {
         Key = getch();
         const char *text;
 
-        void *Memory = ReadEntireFile(File);
-        FreeEntireFile(Memory);
+        const char *Filename = "src/main.cpp";
+        read_file_result File = ReadEntireFile(Filename);
+        if (File.Contents) {
+            WriteEntireFile("data/helloworld.txt", File.Contents, File.ContentsSize);
+            FreeEntireFile(File.Contents);
+        }
+
         if (Key != KEY_F(1)) {
             WmHandleInput(&WindowManager, Key);
         }
