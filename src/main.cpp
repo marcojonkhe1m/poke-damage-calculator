@@ -1,5 +1,6 @@
 #include "file_handler.h"
 #include "window_manager.h"
+#include <iostream>
 
 // random comment for the streak;
 // day 2 of random streak comment. Returning soon!
@@ -35,6 +36,7 @@ int main() {
 
         const char *Filename = "src/main.cpp";
         read_file_result File = ReadEntireFile(Filename);
+        std::cout << "contentsSize: " << File.Contents << std::endl;
         if (File.Contents) {
             WriteEntireFile("data/helloworld.txt", File.Contents, File.ContentsSize);
             FreeEntireFile(File.Contents);
