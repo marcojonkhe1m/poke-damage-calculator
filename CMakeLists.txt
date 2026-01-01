@@ -38,9 +38,13 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Add subdirectories
 add_subdirectory(src)
 
-# Link SDL2 library to the execustable
+# Link nCurses library to the execustable
 target_link_libraries(${PROJECT_NAME} ${CURSES_LIBRARIES})
 
+# Set Project Root as CurrentWorkingDirectory for executable
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+)
 
 
 

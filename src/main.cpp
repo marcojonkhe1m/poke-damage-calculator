@@ -34,11 +34,11 @@ int main() {
         Key = getch();
         const char *text;
 
-        const char *Filename = "src/main.cpp";
+        const char *Filename = PROJECT_ROOT "/src/main.cpp";
         read_file_result File = ReadEntireFile(Filename);
         std::cout << "contentsSize: " << File.Contents << std::endl;
         if (File.Contents) {
-            WriteEntireFile("data/helloworld.txt", File.Contents, File.ContentsSize);
+            WriteEntireFile(PROJECT_ROOT "/data/helloworld.txt", File.Contents, File.ContentsSize);
             FreeEntireFile(File.Contents);
         }
 
