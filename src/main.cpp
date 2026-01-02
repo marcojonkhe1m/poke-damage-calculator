@@ -1,6 +1,7 @@
 #include "file_handler.h"
 #include "window_manager.h"
 #include <iostream>
+#include "build_config.h"
 
 // random comment for the streak;
 // day 2 of random streak comment. Returning soon!
@@ -31,9 +32,11 @@ int main() {
     bool Running = true;
 
     while (Running) {
+#ifdef DEBUG
+        Key = KEY_F(1);
+#else
         Key = getch();
-        const char *text;
-
+#endif
         const char *Filename = PROJECT_ROOT "/src/main.cpp";
         read_file_result File = ReadEntireFile(Filename);
         std::cout << "contentsSize: " << File.Contents << std::endl;

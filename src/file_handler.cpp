@@ -17,7 +17,7 @@ read_file_result ReadEntireFile(const char *Filename) {
             if (Result.Contents) {
                 ssize_t BytesRead = read(FileDescriptor, Result.Contents, BytesInFile);
 
-                if (BytesRead == 0) {
+                if (BytesRead == BytesInFile) {
                     // NOTE(marco): file read succesfully
                     Result.ContentsSize = BytesInFile;
                 }
@@ -48,14 +48,18 @@ read_file_result ReadEntireFile(const char *Filename) {
 }
 
 size_t GetTotalBytesInFile(int FileDescriptor) {
-    struct stat StatBuffer = {};
-    int Result = 0;
-    Result = fstat(FileDescriptor, &StatBuffer);
+    off_t size = lseek(FileDescriptor, 0, SEEK_END);
+    lseek(FileDescriptor, 0, SEEK_SET);
+    return (size_t)size;
 
-    if (Result != -1) {
-        return (size_t)0;
-    }
-    return (size_t)StatBuffer.st_size;
+    // struct stat StatBuffer = {};
+    // int Result = 0;
+    // Result = fstat(FileDescriptor, &StatBuffer);
+
+    // if (Result != -1) {
+    //     return (size_t)0;
+    // }
+    // return (size_t)StatBuffer.st_size;
 }
 
 bool WriteEntireFile(const char *Filename, void *Memory, size_t MemorySize) {
