@@ -1,10 +1,8 @@
+#include "build_config.h"
 #include "file_handler.h"
 #include "window_manager.h"
 #include <iostream>
-#include "build_config.h"
 
-// random comment for the streak;
-// day 2 of random streak comment. Returning soon!
 int main() {
     int Key;
     window_manager WindowManager {};
