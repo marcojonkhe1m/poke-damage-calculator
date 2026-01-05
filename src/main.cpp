@@ -3,6 +3,8 @@
 #include "window_manager.h"
 #include <iostream>
 
+// Wilde vandaag aan formele platform laag werken maar ging op
+// sidequest naar text highlights voor TODO en NOTE en dat duurde lang
 int main() {
     int Key;
     window_manager WindowManager {};
