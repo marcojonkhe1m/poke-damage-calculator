@@ -1,11 +1,21 @@
 #include <iostream>
 #include <ncurses.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
-static volatile sig_atomic_t Running = 1;
-static volatile sig_atomic_t ResizeRequested;
+#define internal static
+#define local_persist static
+#define global_variable static
 
-static void SignalHandler(int Signo, siginfo_t *Info, void *Context) {
+// TODO: (marco): This is a global for now
+global_variable volatile sig_atomic_t Running;
+global_variable volatile sig_atomic_t ResizeRequested;
+
+internal void ResizeWindow(int Width, int Height) {
+}
+
+internal void SignalHandler(int Signo, siginfo_t *Info, void *Context) {
     switch (Signo) {
     case SIGWINCH:
         ResizeRequested = 1;
@@ -13,6 +23,7 @@ static void SignalHandler(int Signo, siginfo_t *Info, void *Context) {
     case SIGINT:
     case SIGHUP:
     case SIGTERM:
+        // TODO: (marco) Handle this with a message to the user, maybe differntly per type?
         Running = 0;
         break;
     }
@@ -42,10 +53,21 @@ int main() {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+    Running = 1;
 
     while (Running) {
         if (ResizeRequested) {
+            ResizeRequested = 0;
             std::cerr << "Debug: SIGWINCH";
+
+            struct winsize WindowSize;
+            ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
+            if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
+                ResizeWindow(WindowSize.ws_col, WindowSize.ws_row);
+            }
+            else {
+                // TODO: (marco) logging
+            }
         };
 
         screen MainScreen = {};
