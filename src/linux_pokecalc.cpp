@@ -12,10 +12,24 @@
 global_variable volatile sig_atomic_t Running;
 global_variable volatile sig_atomic_t ResizeRequested;
 
-internal void ResizeWindow(int Width, int Height) {
+struct lay_out {
+    int Height;
+    int Width;
+};
+
+global_variable lay_out LayOut;
+
+internal void
+LinuxResizeLayOut(int Width, int Height) {
+    LayOut.Height = Height;
+    LayOut.Width = Width;
 }
 
-internal void SignalHandler(int Signo, siginfo_t *Info, void *Context) {
+internal void LinuxUpdateLayOut(int X, int Y, int Width, int Height) {
+}
+
+internal void
+LinuxSignalHandler(int Signo, siginfo_t *Info, void *Context) {
     switch (Signo) {
     case SIGWINCH:
         ResizeRequested = 1;
@@ -40,7 +54,7 @@ struct screen {
 int main() {
 
     struct sigaction Sa = {};
-    Sa.sa_sigaction = SignalHandler;
+    Sa.sa_sigaction = LinuxSignalHandler;
     Sa.sa_flags = SA_SIGINFO;
 
     sigaction(SIGINT, &Sa, NULL);
@@ -63,7 +77,7 @@ int main() {
             struct winsize WindowSize;
             ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
             if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
-                ResizeWindow(WindowSize.ws_col, WindowSize.ws_row);
+                LinuxResizeLayOut(WindowSize.ws_col, WindowSize.ws_row);
             }
             else {
                 // TODO: (marco) logging
