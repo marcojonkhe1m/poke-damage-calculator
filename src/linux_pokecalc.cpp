@@ -8,24 +8,49 @@
 #define local_persist static
 #define global_variable static
 
+struct terminal_buffer {
+    int Width;
+    int Height;
+    chtype *Cells;
+};
+
 // TODO: (marco): This is a global for now
 global_variable volatile sig_atomic_t Running;
 global_variable volatile sig_atomic_t ResizeRequested;
 
-struct lay_out {
-    int Height;
-    int Width;
-};
+global_variable terminal_buffer TerminalBuffer;
 
-global_variable lay_out LayOut;
+internal void LinuxTerminalBufferSize(int Width, int Height) {
 
-internal void
-LinuxResizeLayOut(int Width, int Height) {
-    LayOut.Height = Height;
-    LayOut.Width = Width;
+    // TODO: (marco) Bulletproof this
+    // maybe not free first but later
+
+    if (TerminalBuffer.Cells) {
+        free(TerminalBuffer.Cells);
+    }
+    TerminalBuffer.Width = Width;
+    TerminalBuffer.Height = Height;
+
+    TerminalBuffer.Cells = (chtype *)malloc(sizeof(chtype) * Width * Height);
+    if (TerminalBuffer.Cells) {
+        for (int i = 0; i < Width * Height; ++i) {
+            TerminalBuffer.Cells[i] = ' ';
+        }
+    }
+    else {
+        // TODO: Logging
+    }
 }
+// TODO: (marco) This actually uses nCurse to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
+internal void LinuxPresentBuffer(int X, int Y, int Width, int Height) {
+    erase();
 
-internal void LinuxUpdateLayOut(int X, int Y, int Width, int Height) {
+    for (int y = 0; y < Height; ++y) {
+        move(y, 0);
+        addchnstr(&TerminalBuffer.Cells[y * Width], Width);
+    }
+
+    refresh();
 }
 
 internal void
@@ -43,14 +68,6 @@ LinuxSignalHandler(int Signo, siginfo_t *Info, void *Context) {
     }
 }
 
-struct screen {
-    int Height;
-    int Width;
-    int StartX;
-    int StartY;
-    WINDOW *screen;
-};
-
 int main() {
 
     struct sigaction Sa = {};
@@ -67,48 +84,38 @@ int main() {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
     Running = 1;
 
     while (Running) {
         if (ResizeRequested) {
             ResizeRequested = 0;
-            std::cerr << "Debug: SIGWINCH";
 
             struct winsize WindowSize;
             ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
             if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
-                LinuxResizeLayOut(WindowSize.ws_col, WindowSize.ws_row);
+                resizeterm(WindowSize.ws_row, WindowSize.ws_col);
+                LinuxTerminalBufferSize(WindowSize.ws_col, WindowSize.ws_row);
             }
             else {
                 // TODO: (marco) logging
             }
-        };
-
-        screen MainScreen = {};
-
-        MainScreen.Height = LINES;
-        MainScreen.Width = COLS;
-        MainScreen.StartX = 0;
-        MainScreen.StartY = 0;
-
-        init_pair(1, COLOR_WHITE, COLOR_BLACK);
-
-        MainScreen.screen = newwin(MainScreen.Height, MainScreen.Width, MainScreen.StartY, MainScreen.StartX);
-        if (MainScreen.screen != NULL) {
-            box(MainScreen.screen, 0, 0);
-            wrefresh(MainScreen.screen);
-
-            wattron(MainScreen.screen, COLOR_PAIR(1));
-            mvwprintw(MainScreen.screen, MainScreen.Height / 2, MainScreen.Width / 2, "HelloWorld!");
-            wrefresh(MainScreen.screen);
-
-            getch();
-            delwin(MainScreen.screen);
         }
 
-        else {
-            // TODO: Logging
+        // TODO: (marco) create UpdateAppAndRender
+
+        // Clear
+        for (int i = 0; i < TerminalBuffer.Width * TerminalBuffer.Height; ++i) {
+            TerminalBuffer.Cells[i] = ' ';
         }
+
+        // 'Render' as white
+        for (int i = 0; i < TerminalBuffer.Width * TerminalBuffer.Height; ++i) {
+            TerminalBuffer.Cells[i] = ' ' | COLOR_PAIR(1);
+        }
+
+        getch();
     }
     endwin();
     return 0;
