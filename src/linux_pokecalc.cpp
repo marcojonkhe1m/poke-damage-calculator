@@ -1,6 +1,6 @@
-#include <iostream>
 #include <ncurses.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -41,8 +41,8 @@ internal void LinuxTerminalBufferSize(int Width, int Height) {
         // TODO: Logging
     }
 }
-// TODO: (marco) This actually uses nCurse to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
-internal void LinuxPresentBuffer(int X, int Y, int Width, int Height) {
+// TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
+internal void LinuxPresentBuffer(int Width, int Height) {
     erase();
 
     for (int y = 0; y < Height; ++y) {
@@ -85,37 +85,61 @@ int main() {
     noecho();
     keypad(stdscr, TRUE);
 
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
-    Running = 1;
+    // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
+    // and a struct possible defined in header file.
+    struct winsize WindowSize = {};
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
-    while (Running) {
-        if (ResizeRequested) {
-            ResizeRequested = 0;
+        resizeterm(WindowSize.ws_row, WindowSize.ws_col);
+        LinuxTerminalBufferSize(WindowSize.ws_col, WindowSize.ws_row);
+        init_pair(1, COLOR_WHITE, COLOR_BLACK);
+        // clearok(stdscr, TRUE);
+        // refresh();
 
-            struct winsize WindowSize;
-            ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
-            if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
-                resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-                LinuxTerminalBufferSize(WindowSize.ws_col, WindowSize.ws_row);
+        Running = 1;
+
+        while (Running) {
+            if (ResizeRequested) {
+                ResizeRequested = 0;
+
+                ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
+                if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
+                    resizeterm(WindowSize.ws_row, WindowSize.ws_col);
+                    LinuxTerminalBufferSize(WindowSize.ws_col, WindowSize.ws_row);
+                }
+                else {
+                    // TODO: (marco) logging
+                }
             }
-            else {
-                // TODO: (marco) logging
+
+            // TODO: (marco) create UpdateAppAndRender
+
+            // Clear
+            for (int i = 0; i < TerminalBuffer.Width * TerminalBuffer.Height; ++i) {
+                TerminalBuffer.Cells[i] = ' ';
             }
+
+            // 'Render' as white with a box arround
+            for (int y = 0; y < TerminalBuffer.Height; ++y) {
+                for (int x = 0; x < TerminalBuffer.Width; ++x) {
+                    int Index = y * TerminalBuffer.Width + x;
+                    if (y == 0 || y == TerminalBuffer.Height - 1) {
+                        TerminalBuffer.Cells[Index] = '-' | COLOR_PAIR(1);
+                    }
+                    else if (x == 0 || x == TerminalBuffer.Width - 1) {
+                        TerminalBuffer.Cells[Index] = '|' | COLOR_PAIR(1);
+                    }
+                    else {
+                        TerminalBuffer.Cells[Index] = ' ' | COLOR_PAIR(1);
+                    }
+                }
+            }
+            LinuxPresentBuffer(TerminalBuffer.Width, TerminalBuffer.Height);
+            getch();
         }
-
-        // TODO: (marco) create UpdateAppAndRender
-
-        // Clear
-        for (int i = 0; i < TerminalBuffer.Width * TerminalBuffer.Height; ++i) {
-            TerminalBuffer.Cells[i] = ' ';
-        }
-
-        // 'Render' as white
-        for (int i = 0; i < TerminalBuffer.Width * TerminalBuffer.Height; ++i) {
-            TerminalBuffer.Cells[i] = ' ' | COLOR_PAIR(1);
-        }
-
-        getch();
+    }
+    else {
+        // TODO:(marco) Logging
     }
     endwin();
     return 0;
