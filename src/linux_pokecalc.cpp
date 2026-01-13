@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #define internal static
@@ -19,17 +20,26 @@ global_variable volatile sig_atomic_t Running;
 global_variable volatile sig_atomic_t ResizeRequested;
 
 global_variable terminal_buffer TerminalBuffer;
+global_variable void *BufferMemory;
+global_variable int BufferSize;
 
-internal void LinuxTerminalBufferSize(int Width, int Height) {
+internal void LinuxResizeTerminalBuffer(int Width, int Height) {
 
     // TODO: (marco) Bulletproof this
     // maybe not free first but later
+    if (BufferMemory) {
+        munmap(BufferMemory, BufferSize);
+    }
 
     if (TerminalBuffer.Cells) {
         free(TerminalBuffer.Cells);
     }
     TerminalBuffer.Width = Width;
     TerminalBuffer.Height = Height;
+
+    int ByterPerChar = sizeof(chtype);
+    BufferSize = ByterPerChar * Width * Height;
+    BufferMemory = mmap(NULL, BufferSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     TerminalBuffer.Cells = (chtype *)malloc(sizeof(chtype) * Width * Height);
     if (TerminalBuffer.Cells) {
@@ -91,7 +101,7 @@ int main() {
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-        LinuxTerminalBufferSize(WindowSize.ws_col, WindowSize.ws_row);
+        LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
         init_pair(1, COLOR_WHITE, COLOR_BLACK);
         // clearok(stdscr, TRUE);
         // refresh();
@@ -105,7 +115,7 @@ int main() {
                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
                 if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
                     resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-                    LinuxTerminalBufferSize(WindowSize.ws_col, WindowSize.ws_row);
+                    LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
                 }
                 else {
                     // TODO: (marco) logging
