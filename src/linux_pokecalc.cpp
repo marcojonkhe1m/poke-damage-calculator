@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -22,6 +23,8 @@ global_variable volatile sig_atomic_t ResizeRequested;
 global_variable terminal_buffer TerminalBuffer;
 global_variable void *BufferMemory;
 global_variable int BufferSize;
+global_variable int BufferWidth;
+global_variable int BufferHeight;
 
 internal void LinuxResizeTerminalBuffer(int Width, int Height) {
 
@@ -31,33 +34,45 @@ internal void LinuxResizeTerminalBuffer(int Width, int Height) {
         munmap(BufferMemory, BufferSize);
     }
 
+    BufferWidth = Width;
+    BufferHeight = Height;
+
     if (TerminalBuffer.Cells) {
         free(TerminalBuffer.Cells);
     }
-    TerminalBuffer.Width = Width;
-    TerminalBuffer.Height = Height;
 
-    int ByterPerChar = sizeof(chtype);
-    BufferSize = ByterPerChar * Width * Height;
+    int BytesPerChar = 4;
+    BufferSize = BytesPerChar * BufferWidth * BufferHeight;
     BufferMemory = mmap(NULL, BufferSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-    TerminalBuffer.Cells = (chtype *)malloc(sizeof(chtype) * Width * Height);
-    if (TerminalBuffer.Cells) {
-        for (int i = 0; i < Width * Height; ++i) {
-            TerminalBuffer.Cells[i] = ' ';
+    chtype blue = ' ' | COLOR_PAIR(1);
+    chtype green = ' ' | COLOR_PAIR(2);
+
+    int Pitch = Width * BytesPerChar;
+    uint8_t *Row = (uint8_t *)BufferMemory;
+    for (int Y = 0; Y < BufferHeight; ++Y) {
+        uint8_t *Char = (uint8_t *)Row;
+
+        for (int X = 0; X < BufferWidth; ++X) {
+            Char = (;
+            ++Char;
+            Char = 0x00;
+            ++Char;
+            Char = 0x00;
+            ++Char;
+            Char = 0x00;
+            ++Char;
         }
-    }
-    else {
-        // TODO: Logging
+
+        Row += Pitch;
     }
 }
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
 internal void LinuxPresentBuffer(int Width, int Height) {
     erase();
-
     for (int y = 0; y < Height; ++y) {
         move(y, 0);
-        addchnstr(&TerminalBuffer.Cells[y * Width], Width);
+        addchnstr(&BufferMemory[y * Width], Width);
     }
 
     refresh();
@@ -102,7 +117,8 @@ int main() {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
         LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
-        init_pair(1, COLOR_WHITE, COLOR_BLACK);
+        init_pair(1, COLOR_BLUE, COLOR_BLACK);
+        init_pair(2, COLOR_GREEN, COLOR_BLACK);
         // clearok(stdscr, TRUE);
         // refresh();
 
