@@ -25,6 +25,32 @@ global_variable void *BufferMemory;
 global_variable int BufferSize;
 global_variable int BufferWidth;
 global_variable int BufferHeight;
+global_variable int BytesPerChar = 4;
+
+internal void LinuxRenderGraphics(int XOffSet, int YOffSet) {
+
+    int Width = BufferWidth;
+    int Height = BufferHeight;
+
+    int Pitch = Width * BytesPerChar;
+    uint8_t *Row = (uint8_t *)BufferMemory;
+    for (int Y = 0; Y < Height; ++Y) {
+        uint32_t *Cell = (uint32_t *)Row;
+
+        for (int X = 0; X < Width; ++X) {
+            uint32_t V = 0;
+            if ((X + Y) & 1) {
+                uint32_t V = ' ' | COLOR_PAIR(1);
+            }
+            else {
+                uint32_t V = ' ' | COLOR_PAIR(2);
+            }
+            *Cell++ = V;
+        }
+
+        Row += Pitch;
+    }
+}
 
 internal void LinuxResizeTerminalBuffer(int Width, int Height) {
 
@@ -41,38 +67,19 @@ internal void LinuxResizeTerminalBuffer(int Width, int Height) {
         free(TerminalBuffer.Cells);
     }
 
-    int BytesPerChar = 4;
     BufferSize = BytesPerChar * BufferWidth * BufferHeight;
     BufferMemory = mmap(NULL, BufferSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-    chtype blue = ' ' | COLOR_PAIR(1);
-    chtype green = ' ' | COLOR_PAIR(2);
-
-    int Pitch = Width * BytesPerChar;
-    uint8_t *Row = (uint8_t *)BufferMemory;
-    for (int Y = 0; Y < BufferHeight; ++Y) {
-        uint8_t *Char = (uint8_t *)Row;
-
-        for (int X = 0; X < BufferWidth; ++X) {
-            Char = (;
-            ++Char;
-            Char = 0x00;
-            ++Char;
-            Char = 0x00;
-            ++Char;
-            Char = 0x00;
-            ++Char;
-        }
-
-        Row += Pitch;
-    }
 }
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
 internal void LinuxPresentBuffer(int Width, int Height) {
     erase();
+    int Pitch = Width * BytesPerChar;
     for (int y = 0; y < Height; ++y) {
         move(y, 0);
-        addchnstr(&BufferMemory[y * Width], Width);
+        uint32_t *Cell = (uint32_t *)BufferMemory;
+        addchnstr((chtype *)Cell, Width);
+
+        Cell += Pitch;
     }
 
     refresh();
@@ -109,6 +116,7 @@ int main() {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+    curs_set(0);
 
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
     // and a struct possible defined in header file.
@@ -119,6 +127,8 @@ int main() {
         LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
         init_pair(1, COLOR_BLUE, COLOR_BLACK);
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
+        int XOffset = 0;
+        int YOffset = 0;
         // clearok(stdscr, TRUE);
         // refresh();
 
@@ -139,28 +149,8 @@ int main() {
             }
 
             // TODO: (marco) create UpdateAppAndRender
-
-            // Clear
-            for (int i = 0; i < TerminalBuffer.Width * TerminalBuffer.Height; ++i) {
-                TerminalBuffer.Cells[i] = ' ';
-            }
-
-            // 'Render' as white with a box arround
-            for (int y = 0; y < TerminalBuffer.Height; ++y) {
-                for (int x = 0; x < TerminalBuffer.Width; ++x) {
-                    int Index = y * TerminalBuffer.Width + x;
-                    if (y == 0 || y == TerminalBuffer.Height - 1) {
-                        TerminalBuffer.Cells[Index] = '-' | COLOR_PAIR(1);
-                    }
-                    else if (x == 0 || x == TerminalBuffer.Width - 1) {
-                        TerminalBuffer.Cells[Index] = '|' | COLOR_PAIR(1);
-                    }
-                    else {
-                        TerminalBuffer.Cells[Index] = ' ' | COLOR_PAIR(1);
-                    }
-                }
-            }
-            LinuxPresentBuffer(TerminalBuffer.Width, TerminalBuffer.Height);
+            LinuxRenderGraphics(XOffset, YOffset);
+            LinuxPresentBuffer(WindowSize.ws_col, WindowSize.ws_row);
             getch();
         }
     }
