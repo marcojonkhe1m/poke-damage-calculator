@@ -35,15 +35,15 @@ internal void LinuxRenderGraphics(int XOffSet, int YOffSet) {
     int Pitch = Width * BytesPerChar;
     uint8_t *Row = (uint8_t *)BufferMemory;
     for (int Y = 0; Y < Height; ++Y) {
-        uint32_t *Cell = (uint32_t *)Row;
 
         for (int X = 0; X < Width; ++X) {
-            uint32_t V = 0;
+            chtype *Cell = (chtype *)(Row + X * sizeof(chtype));
+            chtype V = 0;
             if ((X + Y) & 1) {
-                uint32_t V = ' ' | COLOR_PAIR(1);
+                V = ' ' | COLOR_PAIR(1);
             }
             else {
-                uint32_t V = ' ' | COLOR_PAIR(2);
+                V = ' ' | COLOR_PAIR(2);
             }
             *Cell++ = V;
         }
@@ -74,12 +74,13 @@ internal void LinuxResizeTerminalBuffer(int Width, int Height) {
 internal void LinuxPresentBuffer(int Width, int Height) {
     erase();
     int Pitch = Width * BytesPerChar;
+    uint8_t *Row = (uint8_t *)BufferMemory;
     for (int y = 0; y < Height; ++y) {
         move(y, 0);
-        uint32_t *Cell = (uint32_t *)BufferMemory;
-        addchnstr((chtype *)Cell, Width);
+        chtype *Cell = (chtype *)Row;
+        addchnstr(Cell, Width);
 
-        Cell += Pitch;
+        Row += Pitch;
     }
 
     refresh();
@@ -118,6 +119,9 @@ int main() {
     keypad(stdscr, TRUE);
     curs_set(0);
 
+    init_pair(1, COLOR_BLUE, COLOR_BLACK);
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
     // and a struct possible defined in header file.
     struct winsize WindowSize = {};
@@ -125,8 +129,6 @@ int main() {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
         LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
-        init_pair(1, COLOR_BLUE, COLOR_BLACK);
-        init_pair(2, COLOR_GREEN, COLOR_BLACK);
         int XOffset = 0;
         int YOffset = 0;
         // clearok(stdscr, TRUE);
