@@ -10,6 +10,7 @@
 #define local_persist static
 #define global_variable static
 
+// Unfortunately a comment to keep the streak
 // TODO: (marco): This is a global for now
 global_variable volatile sig_atomic_t Running;
 global_variable volatile sig_atomic_t ResizeRequested;
