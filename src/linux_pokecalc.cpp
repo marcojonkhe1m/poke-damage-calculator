@@ -10,101 +10,114 @@
 #define local_persist static
 #define global_variable static
 
-// Unfortunately a comment to keep the streak
+struct linux_offscreen_buffer {
+    void *Memory;
+    int Size;
+    int Width;
+    int Height;
+    int Pitch;
+    int BytesPerChar = sizeof(chtype);
+};
+
+struct color_gradient_info {
+    int ColorBase;
+    int ColorSteps;
+};
+
 // TODO: (marco): This is a global for now
 global_variable volatile sig_atomic_t Running;
 global_variable volatile sig_atomic_t ResizeRequested;
 
-global_variable void *BufferMemory;
-global_variable int BufferSize;
-global_variable int BufferWidth;
-global_variable int BufferHeight;
-global_variable int BytesPerChar = 4;
+global_variable linux_offscreen_buffer GlobalBackbuffer;
+global_variable color_gradient_info GlobalColorGradientInfo;
 
-global_variable int ColorBase;
-global_variable int ColorSteps;
-
-internal void InitColors() {
+internal void InitColors(color_gradient_info *ColorGradientInfo) {
     start_color();
     use_default_colors();
 
-    ColorBase = 16;
-    ColorSteps = 64;
+    ColorGradientInfo->ColorBase = 16;
+    ColorGradientInfo->ColorSteps = 64;
 
-    if (COLORS < ColorBase + ColorSteps) {
+    if (COLORS < ColorGradientInfo->ColorBase + ColorGradientInfo->ColorSteps) {
         return;
     }
 
-    for (int I = 0; I < ColorSteps; I++) {
+    for (int I = 0; I < ColorGradientInfo->ColorSteps; I++) {
 
-        int Green = 1000 - (I * 1000 / (ColorSteps - 1));
-        int Blue = (I * 1000 / (ColorSteps - 1));
+        int Green = 1000 - (I * 1000 / (ColorGradientInfo->ColorSteps - 1));
+        int Blue = (I * 1000 / (ColorGradientInfo->ColorSteps - 1));
 
-        init_color(ColorBase + I, 0, Green, Blue);
+        init_color(ColorGradientInfo->ColorBase + I, 0, Green, Blue);
 
-        init_pair(ColorBase + I, COLOR_BLACK, ColorBase + I);
+        init_pair(
+            ColorGradientInfo->ColorBase + I,
+            COLOR_BLACK,
+            ColorGradientInfo->ColorBase + I);
     }
 }
 
-internal void UpdateGradient(int BlueOffset, int GreenOffset) {
+internal void UpdateGradient(color_gradient_info ColorGradientInfo, int BlueOffset, int GreenOffset) {
 
-    for (int i = 0; i < ColorSteps; i++) {
+    for (int i = 0; i < ColorGradientInfo.ColorSteps; i++) {
         int x = i + BlueOffset;
         int y = i + GreenOffset;
 
-        int Blue = (x % ColorSteps) * 1000 / (ColorSteps - 1);
-        int Green = (y % ColorSteps) * 1000 / (ColorSteps - 1);
+        int Blue = (x % ColorGradientInfo.ColorSteps) * 1000 / (ColorGradientInfo.ColorSteps - 1);
+        int Green = (y % ColorGradientInfo.ColorSteps) * 1000 / (ColorGradientInfo.ColorSteps - 1);
 
-        init_color(ColorBase + i, 0, Green, Blue);
+        init_color(ColorGradientInfo.ColorBase + i, 0, Green, Blue);
     }
 }
 
-internal void RenderWeirdGradient(int BlueOffset, int GreenOffset) {
-    int Width = BufferWidth;
-    int Height = BufferHeight;
+internal void RenderWeirdGradient(
+    linux_offscreen_buffer Buffer,
+    color_gradient_info ColorGradientInfo,
+    int BlueOffset,
+    int GreenOffset) {
 
-    int Pitch = Width * BytesPerChar;
-    uint8_t *Row = (uint8_t *)BufferMemory;
-    for (int Y = 0; Y < Height; ++Y) {
+    // TODO: (marco) See if it's to pass by value or by reference
+    uint8_t *Row = (uint8_t *)Buffer.Memory;
+    for (int Y = 0; Y < Buffer.Height; ++Y) {
         chtype *Cell = (chtype *)Row;
 
-        for (int X = 0; X < Width; ++X) {
-            int StepX = (X + BlueOffset) % ColorSteps;
-            int StepY = (Y + GreenOffset) % ColorSteps;
-            int Step = (StepX + StepY) % ColorSteps;
-            *Cell++ = ' ' | COLOR_PAIR(ColorBase + Step);
+        for (int X = 0; X < Buffer.Width; ++X) {
+            int StepX = (X + BlueOffset) % ColorGradientInfo.ColorSteps;
+            int StepY = (Y + GreenOffset) % ColorGradientInfo.ColorSteps;
+            int Step = (StepX + StepY) % ColorGradientInfo.ColorSteps;
+            *Cell++ = ' ' | COLOR_PAIR(ColorGradientInfo.ColorBase + Step);
         }
 
-        Row += Pitch;
+        Row += Buffer.Pitch;
     }
 }
 
-internal void LinuxResizeTerminalBuffer(int Width, int Height) {
+internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Width, int Height) {
 
     // TODO: (marco) Bulletproof this
     // maybe not free first but later
-    if (BufferMemory) {
-        munmap(BufferMemory, BufferSize);
+    if (Buffer->Memory) {
+        munmap(Buffer->Memory, Buffer->Size);
     }
 
-    BufferWidth = Width;
-    BufferHeight = Height;
+    Buffer->Width = Width;
+    Buffer->Height = Height;
 
-    BufferSize = BytesPerChar * BufferWidth * BufferHeight;
-    BufferMemory = mmap(NULL, BufferSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    Buffer->Size = Buffer->BytesPerChar * Buffer->Width * Buffer->Height;
+    Buffer->Memory = mmap(NULL, Buffer->Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    Buffer->Pitch = Buffer->Width * Buffer->BytesPerChar;
 }
 
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
-internal void LinuxPresentBuffer(int Width, int Height) {
+internal void LinuxPresentBuffer(linux_offscreen_buffer Buffer, int Width, int Height) {
     erase();
-    int Pitch = Width * BytesPerChar;
-    uint8_t *Row = (uint8_t *)BufferMemory;
+    uint8_t *Row = (uint8_t *)Buffer.Memory;
     for (int y = 0; y < Height; ++y) {
         move(y, 0);
         chtype *Cell = (chtype *)Row;
         addchnstr(Cell, Width);
 
-        Row += Pitch;
+        Row += Buffer.Pitch;
     }
 
     refresh();
@@ -143,7 +156,7 @@ int main() {
     keypad(stdscr, TRUE);
     curs_set(0);
 
-    InitColors();
+    InitColors(&GlobalColorGradientInfo);
 
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
     // and a struct possible defined in header file.
@@ -151,11 +164,9 @@ int main() {
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-        LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
+        LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
         int XOffset = 0;
         int YOffset = 0;
-        // clearok(stdscr, TRUE);
-        // refresh();
 
         Running = 1;
 
@@ -166,7 +177,7 @@ int main() {
                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
                 if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
                     resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-                    LinuxResizeTerminalBuffer(WindowSize.ws_col, WindowSize.ws_row);
+                    LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
                 }
                 else {
                     // TODO: (marco) logging
@@ -174,9 +185,9 @@ int main() {
             }
 
             // TODO: (marco) create UpdateAppAndRender
-            RenderWeirdGradient(XOffset, YOffset);
-            UpdateGradient(XOffset, YOffset);
-            LinuxPresentBuffer(WindowSize.ws_col, WindowSize.ws_row);
+            RenderWeirdGradient(GlobalBackbuffer, GlobalColorGradientInfo, XOffset, YOffset);
+            UpdateGradient(GlobalColorGradientInfo, XOffset, YOffset);
+            LinuxPresentBuffer(GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
             ++XOffset;
             YOffset += 2;
