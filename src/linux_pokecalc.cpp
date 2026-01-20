@@ -25,8 +25,8 @@ struct color_gradient_info {
 };
 
 // TODO: (marco): This is a global for now
-global_variable volatile sig_atomic_t Running;
-global_variable volatile sig_atomic_t ResizeRequested;
+global_variable volatile sig_atomic_t GlobalRunning;
+global_variable volatile sig_atomic_t GlobalResizeRequested;
 
 global_variable linux_offscreen_buffer GlobalBackbuffer;
 global_variable color_gradient_info GlobalColorGradientInfo;
@@ -127,13 +127,13 @@ internal void
 LinuxSignalHandler(int Signo, siginfo_t *Info, void *Context) {
     switch (Signo) {
     case SIGWINCH:
-        ResizeRequested = 1;
+        GlobalResizeRequested = 1;
         break;
     case SIGINT:
     case SIGHUP:
     case SIGTERM:
         // TODO: (marco) Handle this with a message to the user, maybe differntly per type?
-        Running = 0;
+        GlobalRunning = 0;
         break;
     }
 }
@@ -156,6 +156,8 @@ int main() {
     keypad(stdscr, TRUE);
     curs_set(0);
 
+    int KeyPressed;
+
     InitColors(&GlobalColorGradientInfo);
 
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
@@ -168,11 +170,11 @@ int main() {
         int XOffset = 0;
         int YOffset = 0;
 
-        Running = 1;
+        GlobalRunning = 1;
 
-        while (Running) {
-            if (ResizeRequested) {
-                ResizeRequested = 0;
+        while (GlobalRunning) {
+            if (GlobalResizeRequested) {
+                GlobalResizeRequested = 0;
 
                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
                 if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
@@ -190,12 +192,16 @@ int main() {
             LinuxPresentBuffer(GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
             ++XOffset;
-            YOffset += 2;
 
             napms(100);
 
-            if (getch() == 'q') {
-                Running = 0;
+            KeyPressed = getch();
+
+            if (KeyPressed == 'q') {
+                GlobalRunning = 0;
+            }
+            else if (KeyPressed == KEY_UP) {
+                YOffset += 2;
             }
         }
     }
