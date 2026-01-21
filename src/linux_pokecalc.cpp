@@ -1,9 +1,11 @@
+#include <fcntl.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <termios.h>
 #include <unistd.h>
 
 #define internal static
