@@ -58,38 +58,38 @@ internal void InitColors(color_gradient_info *ColorGradientInfo) {
     }
 }
 
-internal void UpdateGradient(color_gradient_info ColorGradientInfo, int BlueOffset, int GreenOffset) {
+internal void UpdateGradient(color_gradient_info *ColorGradientInfo, int BlueOffset, int GreenOffset) {
 
-    for (int i = 0; i < ColorGradientInfo.ColorSteps; i++) {
+    for (int i = 0; i < ColorGradientInfo->ColorSteps; i++) {
         int x = i + BlueOffset;
         int y = i + GreenOffset;
 
-        int Blue = (x % ColorGradientInfo.ColorSteps) * 1000 / (ColorGradientInfo.ColorSteps - 1);
-        int Green = (y % ColorGradientInfo.ColorSteps) * 1000 / (ColorGradientInfo.ColorSteps - 1);
+        int Blue = (x % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
+        int Green = (y % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
 
-        init_color(ColorGradientInfo.ColorBase + i, 0, Green, Blue);
+        init_color(ColorGradientInfo->ColorBase + i, 0, Green, Blue);
     }
 }
 
 internal void RenderWeirdGradient(
-    linux_offscreen_buffer Buffer,
-    color_gradient_info ColorGradientInfo,
+    linux_offscreen_buffer *Buffer,
+    color_gradient_info *ColorGradientInfo,
     int BlueOffset,
     int GreenOffset) {
 
     // TODO: (marco) See if it's to pass by value or by reference
-    uint8_t *Row = (uint8_t *)Buffer.Memory;
-    for (int Y = 0; Y < Buffer.Height; ++Y) {
+    uint8_t *Row = (uint8_t *)Buffer->Memory;
+    for (int Y = 0; Y < Buffer->Height; ++Y) {
         chtype *Cell = (chtype *)Row;
 
-        for (int X = 0; X < Buffer.Width; ++X) {
-            int StepX = (X + BlueOffset) % ColorGradientInfo.ColorSteps;
-            int StepY = (Y + GreenOffset) % ColorGradientInfo.ColorSteps;
-            int Step = (StepX + StepY) % ColorGradientInfo.ColorSteps;
-            *Cell++ = ' ' | COLOR_PAIR(ColorGradientInfo.ColorBase + Step);
+        for (int X = 0; X < Buffer->Width; ++X) {
+            int StepX = (X + BlueOffset) % ColorGradientInfo->ColorSteps;
+            int StepY = (Y + GreenOffset) % ColorGradientInfo->ColorSteps;
+            int Step = (StepX + StepY) % ColorGradientInfo->ColorSteps;
+            *Cell++ = ' ' | COLOR_PAIR(ColorGradientInfo->ColorBase + Step);
         }
 
-        Row += Buffer.Pitch;
+        Row += Buffer->Pitch;
     }
 }
 
@@ -111,15 +111,15 @@ internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Widt
 }
 
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
-internal void LinuxPresentBuffer(linux_offscreen_buffer Buffer, int Width, int Height) {
+internal void LinuxPresentBuffer(linux_offscreen_buffer *Buffer, int Width, int Height) {
     erase();
-    uint8_t *Row = (uint8_t *)Buffer.Memory;
+    uint8_t *Row = (uint8_t *)Buffer->Memory;
     for (int y = 0; y < Height; ++y) {
         move(y, 0);
         chtype *Cell = (chtype *)Row;
         addchnstr(Cell, Width);
 
-        Row += Buffer.Pitch;
+        Row += Buffer->Pitch;
     }
 
     refresh();
@@ -146,19 +146,20 @@ int main() {
     Sa.sa_sigaction = LinuxSignalHandler;
     Sa.sa_flags = SA_SIGINFO;
 
+    int KeyPressed;
+
     sigaction(SIGINT, &Sa, NULL);
     sigaction(SIGTERM, &Sa, NULL);
     sigaction(SIGHUP, &Sa, NULL);
     sigaction(SIGWINCH, &Sa, NULL);
 
+    ESCDELAY = 25;
     initscr();
-    cbreak();
+    raw();
     noecho();
     nodelay(stdscr, TRUE);
     keypad(stdscr, TRUE);
     curs_set(0);
-
-    int KeyPressed;
 
     InitColors(&GlobalColorGradientInfo);
 
@@ -188,15 +189,6 @@ int main() {
                 }
             }
 
-            // TODO: (marco) create UpdateAppAndRender
-            RenderWeirdGradient(GlobalBackbuffer, GlobalColorGradientInfo, XOffset, YOffset);
-            UpdateGradient(GlobalColorGradientInfo, XOffset, YOffset);
-            LinuxPresentBuffer(GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
-
-            ++XOffset;
-
-            napms(100);
-
             KeyPressed = getch();
 
             if (KeyPressed == 'q') {
@@ -205,6 +197,41 @@ int main() {
             else if (KeyPressed == KEY_UP) {
                 YOffset += 2;
             }
+            else if (KeyPressed == KEY_DOWN) {
+                YOffset -= 2;
+            }
+            else if (KeyPressed == KEY_LEFT) {
+            }
+            else if (KeyPressed == KEY_RIGHT) {
+            }
+            else if (KeyPressed == KEY_ENTER) {
+            }
+            else if (KeyPressed == KEY_BACKSPACE) {
+            }
+            else if (KeyPressed == KEY_F(1)) {
+            }
+            else if (KeyPressed == 27) {
+                nodelay(stdscr, TRUE);
+
+                int next = getch();
+                if (next == ERR) {
+                    // NOTE: (marco) real esc is pressed - handled below
+                }
+
+                else {
+                    ungetch(next);
+                    ungetch(27);
+                }
+            }
+
+            // TODO: (marco) create UpdateAppAndRender
+            RenderWeirdGradient(&GlobalBackbuffer, &GlobalColorGradientInfo, XOffset, YOffset);
+            UpdateGradient(&GlobalColorGradientInfo, XOffset, YOffset);
+            LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+
+            ++XOffset;
+
+            napms(100);
         }
     }
     else {
