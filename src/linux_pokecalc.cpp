@@ -1,11 +1,10 @@
-#include <fcntl.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #define internal static
@@ -175,6 +174,8 @@ int main() {
 
         GlobalRunning = 1;
 
+        struct timespec LastTime = {};
+        clock_gettime(CLOCK_MONOTONIC, &LastTime);
         while (GlobalRunning) {
             if (GlobalResizeRequested) {
                 GlobalResizeRequested = 0;
@@ -232,6 +233,13 @@ int main() {
             ++XOffset;
 
             napms(100);
+
+            struct timespec EndTime = {};
+            clock_gettime(CLOCK_MONOTONIC, &EndTime);
+
+            // TODO: (marco) display the value here
+            int64_t ElapsedTime = (LastTime.tv_sec + LastTime.tv_nsec) - (EndTime.tv_sec + EndTime.tv_nsec);
+            LastTime = EndTime;
         }
     }
     else {
