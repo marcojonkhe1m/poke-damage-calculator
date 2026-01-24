@@ -238,7 +238,11 @@ int main() {
             clock_gettime(CLOCK_MONOTONIC, &EndTime);
 
             // TODO: (marco) display the value here
-            int64_t ElapsedTime = (LastTime.tv_sec + LastTime.tv_nsec) - (EndTime.tv_sec + EndTime.tv_nsec);
+            int64_t LastTimeSeconds = LastTime.tv_sec + LastTime.tv_nsec / 1000000;
+            int64_t EndTimeSeconds = EndTime.tv_sec + EndTime.tv_nsec / 1000000;
+            int64_t ElapsedTime = EndTimeSeconds - LastTimeSeconds;
+            int32_t MsPerFrame = (int32_t)1000 * ElapsedTime;
+
             LastTime = EndTime;
         }
     }
