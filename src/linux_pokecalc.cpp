@@ -238,10 +238,14 @@ int main() {
             clock_gettime(CLOCK_MONOTONIC, &EndTime);
 
             // TODO: (marco) display the value here
-            int64_t LastTimeSeconds = LastTime.tv_sec + LastTime.tv_nsec / 1000000;
-            int64_t EndTimeSeconds = EndTime.tv_sec + EndTime.tv_nsec / 1000000;
-            int64_t ElapsedTime = EndTimeSeconds - LastTimeSeconds;
-            int32_t MsPerFrame = (int32_t)1000 * ElapsedTime;
+            int64_t LastTimeNs = LastTime.tv_sec * 1000000000LL + LastTime.tv_nsec;
+            int64_t EndTimeNs = EndTime.tv_sec * 1000000000LL + EndTime.tv_nsec;
+            int64_t NsPerFrame = EndTimeNs - LastTimeNs;
+            int32_t MsPerFrame = (int32_t)(NsPerFrame / 1000000);
+            int32_t FramesPerSecond = 1000 / MsPerFrame;
+
+            mvprintw(0, 0, "Milliseconds per frame: %dms | FPS: %d\n", MsPerFrame, FramesPerSecond);
+            refresh();
 
             LastTime = EndTime;
         }
