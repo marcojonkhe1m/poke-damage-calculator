@@ -1,3 +1,10 @@
+/* TODO: (marco) This is not the final platform layer!!!
+
+   - saves
+   - asset loading
+
+*/
+
 #include <ncurses.h>
 #include <signal.h>
 #include <stdint.h>
@@ -31,6 +38,12 @@ global_variable volatile sig_atomic_t GlobalResizeRequested;
 
 global_variable linux_offscreen_buffer GlobalBackbuffer;
 global_variable color_gradient_info GlobalColorGradientInfo;
+
+static inline uint64_t rdtsc() {
+    uint32_t lo, hi;
+    __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi));
+    return ((uint64_t)hi << 32) | lo;
+};
 
 internal void InitColors(color_gradient_info *ColorGradientInfo) {
     start_color();
@@ -174,6 +187,7 @@ int main() {
 
         GlobalRunning = 1;
 
+        uint64_t LastCycleCount = rdtsc();
         struct timespec LastTime = {};
         clock_gettime(CLOCK_MONOTONIC, &LastTime);
         while (GlobalRunning) {
@@ -234,19 +248,25 @@ int main() {
 
             napms(100);
 
+            uint64_t EndCycleCount = rdtsc();
             struct timespec EndTime = {};
             clock_gettime(CLOCK_MONOTONIC, &EndTime);
 
             // TODO: (marco) display the value here
+            uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
             int64_t LastTimeNs = LastTime.tv_sec * 1000000000LL + LastTime.tv_nsec;
             int64_t EndTimeNs = EndTime.tv_sec * 1000000000LL + EndTime.tv_nsec;
             int64_t NsPerFrame = EndTimeNs - LastTimeNs;
-            int32_t MsPerFrame = (int32_t)(NsPerFrame / 1000000);
-            int32_t FramesPerSecond = 1000 / MsPerFrame;
+            float MsPerFrame = (float)NsPerFrame / 1000000.0f;
+            float FPS = 1000.0f / MsPerFrame;
+            float MCPF = ((float)CyclesElapsed / (1000.0f * 1000.0f));
 
-            mvprintw(0, 0, "Milliseconds per frame: %dms | FPS: %d\n", MsPerFrame, FramesPerSecond);
+            mvprintw(0, 0, "%.02fms/f\n", MsPerFrame);
+            mvprintw(1, 0, "%.02ff/s\n", FPS);
+            mvprintw(2, 0, "%.02fmc/f\n", MCPF);
             refresh();
 
+            LastCycleCount = EndCycleCount;
             LastTime = EndTime;
         }
     }
