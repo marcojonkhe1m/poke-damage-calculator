@@ -18,6 +18,8 @@
 #define local_persist static
 #define global_variable static
 
+#include "pokecalc.cpp"
+
 struct linux_offscreen_buffer {
     void *Memory;
     int Size;
@@ -261,11 +263,12 @@ int main() {
             float FPS = 1000.0f / MsPerFrame;
             float MCPF = ((float)CyclesElapsed / (1000.0f * 1000.0f));
 
+#if 0
             mvprintw(0, 0, "%.02fms/f\n", MsPerFrame);
             mvprintw(1, 0, "%.02ff/s\n", FPS);
             mvprintw(2, 0, "%.02fmc/f\n", MCPF);
             refresh();
-
+#endif
             LastCycleCount = EndCycleCount;
             LastTime = EndTime;
         }
