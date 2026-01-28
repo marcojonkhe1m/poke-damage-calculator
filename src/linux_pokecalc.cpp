@@ -92,15 +92,20 @@ internal void RenderWeirdGradient(
     int GreenOffset) {
 
     // TODO: (marco) See if it's to pass by value or by reference
+    int ColorBase = ColorGradientInfo->ColorSteps;
     uint8_t *Row = (uint8_t *)Buffer->Memory;
     for (int Y = 0; Y < Buffer->Height; ++Y) {
-        chtype *Cell = (chtype *)Row;
+        uint32_t *Cell = (uint32_t *)Row;
 
         for (int X = 0; X < Buffer->Width; ++X) {
             int StepX = (X + BlueOffset) % ColorGradientInfo->ColorSteps;
             int StepY = (Y + GreenOffset) % ColorGradientInfo->ColorSteps;
             int Step = (StepX + StepY) % ColorGradientInfo->ColorSteps;
-            *Cell++ = ' ' | COLOR_PAIR(ColorGradientInfo->ColorBase + Step);
+
+            uint8_t Glyph = ' ';
+            uint8_t ColorPairIndex = ColorBase + Step;
+
+            *Cell++ = ((ColorPairIndex << 8) | Glyph);
         }
 
         Row += Buffer->Pitch;
