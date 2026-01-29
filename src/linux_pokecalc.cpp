@@ -92,7 +92,6 @@ internal void RenderWeirdGradient(
     int GreenOffset) {
 
     // TODO: (marco) See if it's to pass by value or by reference
-    int ColorBase = ColorGradientInfo->ColorSteps;
     uint8_t *Row = (uint8_t *)Buffer->Memory;
     for (int Y = 0; Y < Buffer->Height; ++Y) {
         uint32_t *Cell = (uint32_t *)Row;
@@ -103,7 +102,7 @@ internal void RenderWeirdGradient(
             int Step = (StepX + StepY) % ColorGradientInfo->ColorSteps;
 
             uint8_t Glyph = ' ';
-            uint8_t ColorPairIndex = ColorBase + Step;
+            uint8_t ColorPairIndex = ColorGradientInfo->ColorBase + Step;
 
             *Cell++ = ((ColorPairIndex << 8) | Glyph);
         }
@@ -132,13 +131,22 @@ internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Widt
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
 internal void LinuxPresentBuffer(linux_offscreen_buffer *Buffer, int Width, int Height) {
     erase();
-    uint8_t *Row = (uint8_t *)Buffer->Memory;
-    for (int y = 0; y < Height; ++y) {
-        move(y, 0);
-        chtype *Cell = (chtype *)Row;
-        addchnstr(Cell, Width);
+    uint8_t *BufferRow = (uint8_t *)Buffer->Memory;
+    chtype TargetRow[Width];
 
-        Row += Buffer->Pitch;
+    for (int y = 0; y < Height; ++y) {
+        uint32_t *Cell = (uint32_t *)BufferRow;
+
+        for (int x = 0; x < Width; ++x) {
+            char Character = (uint8_t)(*Cell & 0xFF);
+            uint8_t ForegroundColor = (uint8_t)((*Cell >> 8) & 0xFF);
+
+            TargetRow[x] = Character | COLOR_PAIR(ForegroundColor + 1);
+            Cell++;
+        }
+        mvaddchnstr(y, 0, TargetRow, Width);
+
+        BufferRow += Buffer->Pitch;
     }
 
     refresh();
