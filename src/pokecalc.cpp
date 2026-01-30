@@ -1,13 +1,13 @@
 // NOTE: (marco) App code here
 //
+#include "pokecalc.h"
 
 internal void RenderWeirdGradient(
-    linux_offscreen_buffer *Buffer,
+    app_offscreen_buffer *Buffer,
     color_gradient_info *ColorGradientInfo,
     int BlueOffset,
     int GreenOffset) {
 
-    // TODO: (marco) See if it's to pass by value or by reference
     uint8_t *Row = (uint8_t *)Buffer->Memory;
     for (int Y = 0; Y < Buffer->Height; ++Y) {
         uint32_t *Cell = (uint32_t *)Row;
@@ -25,4 +25,17 @@ internal void RenderWeirdGradient(
 
         Row += Buffer->Pitch;
     }
+}
+
+internal void AppUpdateAndRender(
+    app_offscreen_buffer *Buffer,
+    color_gradient_info *ColorGradientInfo,
+    int BlueOffset,
+    int GreenOffset) {
+
+    RenderWeirdGradient(
+        Buffer,
+        ColorGradientInfo,
+        BlueOffset,
+        GreenOffset);
 }

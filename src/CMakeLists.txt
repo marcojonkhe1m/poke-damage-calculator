@@ -6,7 +6,7 @@ target_sources(
     #    ${CMAKE_CURRENT_SOURCE_DIR}/window_manager.cpp
     #    ${CMAKE_CURRENT_SOURCE_DIR}/file_handler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/linux_pokecalc.cpp
-    # ${CMAKE_CURRENT_SOURCE_DIR}/test_color_gradient.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/pokecalc.cpp
 )
 
 # Make include directory available

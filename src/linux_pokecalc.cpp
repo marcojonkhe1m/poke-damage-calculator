@@ -19,6 +19,7 @@
 #define global_variable static
 
 #include "pokecalc.cpp"
+#include "pokecalc.h"
 
 struct linux_offscreen_buffer {
     void *Memory;
@@ -26,10 +27,9 @@ struct linux_offscreen_buffer {
     int Width;
     int Height;
     int Pitch;
-    int BytesPerChar = sizeof(chtype);
 };
 
-struct color_gradient_info {
+struct linux_color_gradient_info {
     int ColorBase;
     int ColorSteps;
 };
@@ -39,7 +39,7 @@ global_variable volatile sig_atomic_t GlobalRunning;
 global_variable volatile sig_atomic_t GlobalResizeRequested;
 
 global_variable linux_offscreen_buffer GlobalBackbuffer;
-global_variable color_gradient_info GlobalColorGradientInfo;
+global_variable linux_color_gradient_info GlobalColorGradientInfo;
 
 static inline uint64_t rdtsc() {
     uint32_t lo, hi;
@@ -47,7 +47,7 @@ static inline uint64_t rdtsc() {
     return ((uint64_t)hi << 32) | lo;
 };
 
-internal void InitColors(color_gradient_info *ColorGradientInfo) {
+internal void InitColors(linux_color_gradient_info *ColorGradientInfo) {
     start_color();
     use_default_colors();
 
@@ -72,7 +72,7 @@ internal void InitColors(color_gradient_info *ColorGradientInfo) {
     }
 }
 
-internal void UpdateGradient(color_gradient_info *ColorGradientInfo, int BlueOffset, int GreenOffset) {
+internal void UpdateGradient(linux_color_gradient_info *ColorGradientInfo, int BlueOffset, int GreenOffset) {
 
     for (int i = 0; i < ColorGradientInfo->ColorSteps; i++) {
         int x = i + BlueOffset;
@@ -82,32 +82,6 @@ internal void UpdateGradient(color_gradient_info *ColorGradientInfo, int BlueOff
         int Green = (y % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
 
         init_color(ColorGradientInfo->ColorBase + i, 0, Green, Blue);
-    }
-}
-
-internal void RenderWeirdGradient(
-    linux_offscreen_buffer *Buffer,
-    color_gradient_info *ColorGradientInfo,
-    int BlueOffset,
-    int GreenOffset) {
-
-    // TODO: (marco) See if it's to pass by value or by reference
-    uint8_t *Row = (uint8_t *)Buffer->Memory;
-    for (int Y = 0; Y < Buffer->Height; ++Y) {
-        uint32_t *Cell = (uint32_t *)Row;
-
-        for (int X = 0; X < Buffer->Width; ++X) {
-            int StepX = (X + BlueOffset) % ColorGradientInfo->ColorSteps;
-            int StepY = (Y + GreenOffset) % ColorGradientInfo->ColorSteps;
-            int Step = (StepX + StepY) % ColorGradientInfo->ColorSteps;
-
-            uint8_t Glyph = ' ';
-            uint8_t ColorPairIndex = ColorGradientInfo->ColorBase + Step;
-
-            *Cell++ = ((ColorPairIndex << 8) | Glyph);
-        }
-
-        Row += Buffer->Pitch;
     }
 }
 
@@ -121,11 +95,12 @@ internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Widt
 
     Buffer->Width = Width;
     Buffer->Height = Height;
+    int BytesPerChar = sizeof(chtype);
 
-    Buffer->Size = Buffer->BytesPerChar * Buffer->Width * Buffer->Height;
+    Buffer->Size = BytesPerChar * Buffer->Width * Buffer->Height;
     Buffer->Memory = mmap(NULL, Buffer->Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-    Buffer->Pitch = Buffer->Width * Buffer->BytesPerChar;
+    Buffer->Pitch = Buffer->Width * BytesPerChar;
 }
 
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
@@ -255,7 +230,16 @@ int main() {
             }
 
             // TODO: (marco) create UpdateAppAndRender
-            RenderWeirdGradient(&GlobalBackbuffer, &GlobalColorGradientInfo, XOffset, YOffset);
+            app_offscreen_buffer Buffer = {};
+            Buffer.Memory = GlobalBackbuffer.Memory;
+            Buffer.Width = GlobalBackbuffer.Width;
+            Buffer.Height = GlobalBackbuffer.Height;
+            Buffer.Pitch = GlobalBackbuffer.Pitch;
+            color_gradient_info ColorInfo = {};
+            ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
+            ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
+
+            AppUpdateAndRender(&Buffer, &ColorInfo, XOffset, YOffset);
             UpdateGradient(&GlobalColorGradientInfo, XOffset, YOffset);
             LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
