@@ -2,8 +2,14 @@
 
    - saves
    - asset loading
-    - wathever...
 */
+
+#define internal static
+#define local_persist static
+#define global_variable static
+
+#include "pokecalc.cpp"
+#include "pokecalc.h"
 
 #include <ncurses.h>
 #include <signal.h>
@@ -14,25 +20,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define internal static
-#define local_persist static
-#define global_variable static
-
-#include "pokecalc.cpp"
-#include "pokecalc.h"
-
-struct linux_offscreen_buffer {
-    void *Memory;
-    int Size;
-    int Width;
-    int Height;
-    int Pitch;
-};
-
-struct linux_color_gradient_info {
-    int ColorBase;
-    int ColorSteps;
-};
+#include "linux_pokecalc.h"
 
 // TODO: (marco): This is a global for now
 global_variable volatile sig_atomic_t GlobalRunning;
@@ -53,22 +41,42 @@ internal void InitColors(linux_color_gradient_info *ColorGradientInfo) {
 
     ColorGradientInfo->ColorBase = 16;
     ColorGradientInfo->ColorSteps = 64;
+    int Base = ColorGradientInfo->ColorBase;
+    int Steps = ColorGradientInfo->ColorSteps;
 
-    if (COLORS < ColorGradientInfo->ColorBase + ColorGradientInfo->ColorSteps) {
-        return;
+    ColorGradientInfo->Blue = (uint8_t *)calloc(Steps, sizeof(uint8_t));
+
+    if (ColorGradientInfo->Blue) {
+        ColorGradientInfo->Green = (uint8_t *)calloc(Steps, sizeof(uint8_t));
+
+        if (ColorGradientInfo->Green) {
+
+            if (COLORS < Base + Steps) {
+                return;
+            }
+
+            for (int i = 0; i < Steps; i++) {
+                *ColorGradientInfo->Blue = 1000 - (i * 1000 / (Steps - 1));
+                *ColorGradientInfo->Green = (i * 1000 / (Steps - 1));
+
+                ColorGradientInfo->Blue++;
+                ColorGradientInfo->Green++;
+
+                init_color(ColorGradientInfo->ColorBase + I, 0, Green, Blue);
+
+                init_pair(
+                    ColorGradientInfo->ColorBase + I,
+                    COLOR_BLACK,
+                    ColorGradientInfo->ColorBase + I);
+            }
+        }
+        else {
+            free(ColorGradientInfo->Blue);
+            return;
+        }
     }
-
-    for (int I = 0; I < ColorGradientInfo->ColorSteps; I++) {
-
-        int Green = 1000 - (I * 1000 / (ColorGradientInfo->ColorSteps - 1));
-        int Blue = (I * 1000 / (ColorGradientInfo->ColorSteps - 1));
-
-        init_color(ColorGradientInfo->ColorBase + I, 0, Green, Blue);
-
-        init_pair(
-            ColorGradientInfo->ColorBase + I,
-            COLOR_BLACK,
-            ColorGradientInfo->ColorBase + I);
+    else {
+        return;
     }
 }
 
@@ -172,8 +180,6 @@ int main() {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
         LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
-        int XOffset = 0;
-        int YOffset = 0;
 
         GlobalRunning = 1;
 
@@ -200,10 +206,8 @@ int main() {
                 GlobalRunning = 0;
             }
             else if (KeyPressed == KEY_UP) {
-                YOffset += 2;
             }
             else if (KeyPressed == KEY_DOWN) {
-                YOffset -= 2;
             }
             else if (KeyPressed == KEY_LEFT) {
             }
@@ -239,7 +243,7 @@ int main() {
             ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
             ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-            AppUpdateAndRender(&Buffer, &ColorInfo, XOffset, YOffset);
+            AppUpdateAndRender(&Buffer, &ColorInfo);
             UpdateGradient(&GlobalColorGradientInfo, XOffset, YOffset);
             LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 

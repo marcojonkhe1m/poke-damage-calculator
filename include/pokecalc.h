@@ -10,6 +10,9 @@ struct app_offscreen_buffer {
 struct color_gradient_info {
     int ColorBase;
     int ColorSteps;
+
+    uint8_t *Blue;
+    uint8_t *Green;
 };
 
 internal void AppUpdateAndRender(

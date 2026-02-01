@@ -27,11 +27,28 @@ internal void RenderWeirdGradient(
     }
 }
 
-internal void AppUpdateAndRender(
-    app_offscreen_buffer *Buffer,
+internal void UpdateGradient(
     color_gradient_info *ColorGradientInfo,
     int BlueOffset,
     int GreenOffset) {
+
+    for (int i = 0; i < ColorGradientInfo->ColorSteps; i++) {
+        int x = i + BlueOffset;
+        int y = i + GreenOffset;
+
+        uint8_t Blue = (x % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
+        uint8_t Green = (y % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
+
+        *ColorGradientInfo->Memory++ = ((Green << 6) | Blue);
+    }
+}
+
+internal void AppUpdateAndRender(
+    app_offscreen_buffer *Buffer,
+    color_gradient_info *ColorGradientInfo) {
+
+    local_persist int BlueOffset = 0;
+    local_persist int GreenOffset = 0;
 
     RenderWeirdGradient(
         Buffer,
