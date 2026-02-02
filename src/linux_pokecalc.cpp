@@ -8,12 +8,16 @@
 #define local_persist static
 #define global_variable static
 
+#include <stdint.h>
+
+global_variable int GlobalColorBase = 16;
+global_variable const int GlobalColorSteps = 64;
+
 #include "pokecalc.cpp"
 #include "pokecalc.h"
 
 #include <ncurses.h>
 #include <signal.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -35,61 +39,46 @@ static inline uint64_t rdtsc() {
     return ((uint64_t)hi << 32) | lo;
 };
 
-internal void InitColors(linux_color_gradient_info *ColorGradientInfo) {
+internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
     start_color();
     use_default_colors();
 
-    ColorGradientInfo->ColorBase = 16;
-    ColorGradientInfo->ColorSteps = 64;
-    int Base = ColorGradientInfo->ColorBase;
-    int Steps = ColorGradientInfo->ColorSteps;
+    ColorGradientInfo->ColorBase = GlobalColorBase;
+    ColorGradientInfo->ColorSteps = GlobalColorSteps;
+    int Base = GlobalColorBase;
+    int Steps = GlobalColorSteps;
 
-    ColorGradientInfo->Blue = (uint8_t *)calloc(Steps, sizeof(uint8_t));
-
-    if (ColorGradientInfo->Blue) {
-        ColorGradientInfo->Green = (uint8_t *)calloc(Steps, sizeof(uint8_t));
-
-        if (ColorGradientInfo->Green) {
-
-            if (COLORS < Base + Steps) {
-                return;
-            }
-
-            for (int i = 0; i < Steps; i++) {
-                *ColorGradientInfo->Blue = 1000 - (i * 1000 / (Steps - 1));
-                *ColorGradientInfo->Green = (i * 1000 / (Steps - 1));
-
-                ColorGradientInfo->Blue++;
-                ColorGradientInfo->Green++;
-
-                init_color(ColorGradientInfo->ColorBase + I, 0, Green, Blue);
-
-                init_pair(
-                    ColorGradientInfo->ColorBase + I,
-                    COLOR_BLACK,
-                    ColorGradientInfo->ColorBase + I);
-            }
-        }
-        else {
-            free(ColorGradientInfo->Blue);
-            return;
-        }
-    }
-    else {
+    if (COLORS < Base + Steps) {
         return;
+    }
+
+    for (int i = 0; i < Steps; i++) {
+        int Blue = 1000 - (ColorGradientInfo->Blue[i] * 1000 / (Steps - 1));
+        int Green = (ColorGradientInfo->Green[i] * 1000 / (Steps - 1));
+
+        init_color(Base + i, 0, Green, Blue);
+
+        init_pair(
+            Base + i,
+            COLOR_BLACK,
+            Base + i);
     }
 }
 
-internal void UpdateGradient(linux_color_gradient_info *ColorGradientInfo, int BlueOffset, int GreenOffset) {
+internal void LinuxUpdateGradient(linux_color_gradient_info *ColorGradientInfo) {
+    int Base = ColorGradientInfo->ColorBase;
+    int Steps = ColorGradientInfo->ColorSteps;
 
-    for (int i = 0; i < ColorGradientInfo->ColorSteps; i++) {
-        int x = i + BlueOffset;
-        int y = i + GreenOffset;
+    for (int i = 0; i < Steps; i++) {
+        int Blue = 1000 - (ColorGradientInfo->Blue[i] * 1000 / (Steps - 1));
+        int Green = (ColorGradientInfo->Green[i] * 1000 / (Steps - 1));
 
-        int Blue = (x % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
-        int Green = (y % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
+        init_color(Base + i, 0, Green, Blue);
 
-        init_color(ColorGradientInfo->ColorBase + i, 0, Green, Blue);
+        init_pair(
+            Base + i,
+            COLOR_BLACK,
+            Base + i);
     }
 }
 
@@ -171,11 +160,11 @@ int main() {
     keypad(stdscr, TRUE);
     curs_set(0);
 
-    InitColors(&GlobalColorGradientInfo);
-
+    LinuxInitColors(&GlobalColorGradientInfo);
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
     // and a struct possible defined in header file.
-    struct winsize WindowSize = {};
+    struct winsize WindowSize
+        = {};
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
@@ -243,11 +232,14 @@ int main() {
             ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
             ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-            AppUpdateAndRender(&Buffer, &ColorInfo);
-            UpdateGradient(&GlobalColorGradientInfo, XOffset, YOffset);
-            LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+            for (int i = 0; i < GlobalColorSteps; i++) {
+                ColorInfo.Blue[i] = GlobalColorGradientInfo.Blue[i];
+                ColorInfo.Green[i] = GlobalColorGradientInfo.Green[i];
+            }
 
-            ++XOffset;
+            AppUpdateAndRender(&Buffer, &ColorInfo);
+            LinuxUpdateGradient(&GlobalColorGradientInfo);
+            LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
             napms(100);
 

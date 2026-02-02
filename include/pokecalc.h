@@ -11,8 +11,8 @@ struct color_gradient_info {
     int ColorBase;
     int ColorSteps;
 
-    uint8_t *Blue;
-    uint8_t *Green;
+    uint8_t Blue[GlobalColorSteps];
+    uint8_t Green[GlobalColorSteps];
 };
 
 internal void AppUpdateAndRender(

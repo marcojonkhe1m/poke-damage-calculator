@@ -36,10 +36,8 @@ internal void UpdateGradient(
         int x = i + BlueOffset;
         int y = i + GreenOffset;
 
-        uint8_t Blue = (x % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
-        uint8_t Green = (y % ColorGradientInfo->ColorSteps) * 1000 / (ColorGradientInfo->ColorSteps - 1);
-
-        *ColorGradientInfo->Memory++ = ((Green << 6) | Blue);
+        ColorGradientInfo->Blue[i] = (uint8_t)(x % ColorGradientInfo->ColorSteps);
+        ColorGradientInfo->Green[i] = (uint8_t)(y % ColorGradientInfo->ColorSteps);
     }
 }
 
@@ -52,6 +50,11 @@ internal void AppUpdateAndRender(
 
     RenderWeirdGradient(
         Buffer,
+        ColorGradientInfo,
+        BlueOffset,
+        GreenOffset);
+
+    UpdateGradient(
         ColorGradientInfo,
         BlueOffset,
         GreenOffset);
