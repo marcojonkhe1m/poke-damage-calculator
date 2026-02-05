@@ -55,8 +55,8 @@ internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
     }
 
     for (int i = 0; i < Steps; i++) {
-        int Blue = 1000 - (ColorGradientInfo->Blue[i] * 1000 / (Steps - 1));
-        int Green = (ColorGradientInfo->Green[i] * 1000 / (Steps - 1));
+        int Blue = 1000 - (i * 1000 / (Steps - 1));
+        int Green = (i * 1000 / (Steps - 1));
 
         init_color(Base + i, 0, Green, Blue);
 
@@ -67,7 +67,7 @@ internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
     }
 }
 
-internal void LinuxUpdateGradient(linux_color_gradient_info *ColorGradientInfo) {
+internal void LinuxUpdateGradient(color_gradient_info *ColorGradientInfo) {
     int Base = ColorGradientInfo->ColorBase;
     int Steps = ColorGradientInfo->ColorSteps;
 
@@ -234,13 +234,8 @@ int main() {
             ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
             ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-            for (int i = 0; i < GlobalColorSteps; i++) {
-                ColorInfo.Blue[i] = GlobalColorGradientInfo.Blue[i];
-                ColorInfo.Green[i] = GlobalColorGradientInfo.Green[i];
-            }
-
             AppUpdateAndRender(&Buffer, &ColorInfo);
-            LinuxUpdateGradient(&GlobalColorGradientInfo);
+            LinuxUpdateGradient(&ColorInfo);
             LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
             napms(100);
