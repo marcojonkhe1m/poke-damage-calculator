@@ -48,6 +48,10 @@ internal void AppUpdateAndRender(
     local_persist int BlueOffset = 0;
     local_persist int GreenOffset = 0;
 
+    if (Input.ArrowUp) {
+        GreenOffset += 1;
+    }
+
     RenderWeirdGradient(
         Buffer,
         ColorGradientInfo,

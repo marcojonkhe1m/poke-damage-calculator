@@ -115,7 +115,7 @@ internal void LinuxPresentBuffer(linux_offscreen_buffer *Buffer, int Width, int 
             char Character = (uint8_t)(*Cell & 0xFF);
             uint8_t ForegroundColor = (uint8_t)((*Cell >> 8) & 0xFF);
 
-            TargetRow[x] = Character | COLOR_PAIR(ForegroundColor + 1);
+            TargetRow[x] = Character | COLOR_PAIR(ForegroundColor);
             Cell++;
         }
         mvaddchnstr(y, 0, TargetRow, Width);
