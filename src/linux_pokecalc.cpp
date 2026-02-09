@@ -128,6 +128,11 @@ internal void LinuxPresentBuffer(linux_offscreen_buffer *Buffer, int Width, int 
     refresh();
 }
 
+internal void LinuxProcessKeyboardButton(app_key_state *OldState, app_key_state *NewState) {
+    NewState->EndedDown = true;
+    NewState->HalfTransitionCount = OldState->EndedDown != NewState->EndedDown ? 1 : 0;
+}
+
 internal void
 LinuxSignalHandler(int Signo, siginfo_t *Info, void *Context) {
     switch (Signo) {
@@ -176,10 +181,15 @@ int main() {
 
         GlobalRunning = 1;
 
+        app_keyboard_input Input[2] = {};
+        app_keyboard_input *NewInput = &Input[0];
+        app_keyboard_input *OldInput = &Input[1];
+
         uint64_t LastCycleCount = rdtsc();
         struct timespec LastTime = {};
         clock_gettime(CLOCK_MONOTONIC, &LastTime);
         while (GlobalRunning) {
+
             if (GlobalResizeRequested) {
                 GlobalResizeRequested = 0;
 
@@ -193,24 +203,34 @@ int main() {
                 }
             }
 
+            app_keyboard_input *OldKeyboard = OldInput;
+            app_keyboard_input *NewKeyboard = NewInput;
+
             KeyPressed = getch();
 
             if (KeyPressed == 'q') {
                 GlobalRunning = 0;
             }
             else if (KeyPressed == KEY_UP) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up);
             }
             else if (KeyPressed == KEY_DOWN) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down);
             }
             else if (KeyPressed == KEY_LEFT) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left);
             }
             else if (KeyPressed == KEY_RIGHT) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right);
             }
             else if (KeyPressed == KEY_ENTER) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select);
             }
             else if (KeyPressed == KEY_BACKSPACE) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back);
             }
             else if (KeyPressed == KEY_F(1)) {
+                LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help);
             }
             else if (KeyPressed == 27) {
                 nodelay(stdscr, TRUE);
@@ -236,7 +256,7 @@ int main() {
             ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
             ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-            AppUpdateAndRender(&Buffer, &ColorInfo);
+            AppUpdateAndRender(NewInput, &Buffer, &ColorInfo);
             LinuxUpdateGradient(&ColorInfo);
             LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
@@ -263,6 +283,10 @@ int main() {
 #endif
             LastCycleCount = EndCycleCount;
             LastTime = EndTime;
+
+            app_keyboard_input *Temp = NewInput;
+            NewInput = OldInput;
+            OldInput = Temp;
         }
     }
     else {

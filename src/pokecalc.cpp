@@ -42,13 +42,14 @@ internal void UpdateGradient(
 }
 
 internal void AppUpdateAndRender(
+    app_keyboard_input *Input,
     app_offscreen_buffer *Buffer,
     color_gradient_info *ColorGradientInfo) {
 
     local_persist int BlueOffset = 0;
     local_persist int GreenOffset = 0;
 
-    if (Input.ArrowUp) {
+    if (Input->Up.EndedDown) {
         GreenOffset += 1;
     }
 

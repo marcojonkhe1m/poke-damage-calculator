@@ -1,5 +1,8 @@
 #pragma once
 
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+// TODO: (marco) macros: swap, min, max ...
+
 struct app_offscreen_buffer {
     void *Memory;
     int Width;
@@ -15,8 +18,29 @@ struct color_gradient_info {
     uint8_t Green[GlobalColorSteps];
 };
 
-internal void AppUpdateAndRender(
+struct app_key_state {
+    int HalfTransitionCount;
+    bool EndedDown;
+};
+
+struct app_keyboard_input {
+    union {
+        app_key_state Keys[7];
+
+        struct {
+            app_key_state Up;
+            app_key_state Down;
+            app_key_state Left;
+            app_key_state Right;
+            app_key_state Select;
+            app_key_state Back;
+            app_key_state Help;
+        };
+    };
+};
+
+internal void
+AppUpdateAndRender(
+    app_keyboard_input *Input,
     app_offscreen_buffer *Buffer,
-    color_gradient_info *ColorGradientInfo,
-    int BlueOffset,
-    int GreenOffset);
+    color_gradient_info *ColorGradientInfo);
