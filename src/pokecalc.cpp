@@ -42,25 +42,32 @@ internal void UpdateGradient(
 }
 
 internal void AppUpdateAndRender(
+    app_memory *Memory,
     app_keyboard_input *Input,
     app_offscreen_buffer *Buffer,
     color_gradient_info *ColorGradientInfo) {
 
-    local_persist int BlueOffset = 0;
-    local_persist int GreenOffset = 0;
+    app_state *AppState = (app_state *)Memory->PermanentStorage;
+    if (!Memory->IsInitialized) {
+        AppState->BlueOffset = 0;
+        AppState->GreenOffset = 0;
+    }
 
     if (Input->Up.EndedDown) {
-        GreenOffset += 1;
+        AppState->GreenOffset += 1;
+    }
+    if (Input->Left.EndedDown) {
+        AppState->BlueOffset += 1;
     }
 
     RenderWeirdGradient(
         Buffer,
         ColorGradientInfo,
-        BlueOffset,
-        GreenOffset);
+        AppState->BlueOffset,
+        AppState->GreenOffset);
 
     UpdateGradient(
         ColorGradientInfo,
-        BlueOffset,
-        GreenOffset);
+        AppState->BlueOffset,
+        AppState->GreenOffset);
 }

@@ -39,8 +39,22 @@ struct app_keyboard_input {
     };
 };
 
-internal void
-AppUpdateAndRender(
+struct app_memory {
+    bool IsInitialized;
+    uint64_t PermanentStorageSize;
+    void *PermanentStorage;
+};
+
+internal void AppUpdateAndRender(
+    app_memory *AppMemory,
     app_keyboard_input *Input,
     app_offscreen_buffer *Buffer,
     color_gradient_info *ColorGradientInfo);
+
+//
+//
+//
+struct app_state {
+    int BlueOffset;
+    int GreenOffset;
+};

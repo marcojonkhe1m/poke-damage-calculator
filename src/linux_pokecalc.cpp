@@ -128,8 +128,8 @@ internal void LinuxPresentBuffer(linux_offscreen_buffer *Buffer, int Width, int 
     refresh();
 }
 
-internal void LinuxProcessKeyboardButton(app_key_state *OldState, app_key_state *NewState) {
-    NewState->EndedDown = true;
+internal void LinuxProcessKeyboardButton(app_key_state *OldState, app_key_state *NewState, int KeyPressed, int KeyExpected) {
+    NewState->EndedDown = (KeyPressed == KeyExpected);
     NewState->HalfTransitionCount = OldState->EndedDown != NewState->EndedDown ? 1 : 0;
 }
 
@@ -211,27 +211,6 @@ int main() {
             if (KeyPressed == 'q') {
                 GlobalRunning = 0;
             }
-            else if (KeyPressed == KEY_UP) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up);
-            }
-            else if (KeyPressed == KEY_DOWN) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down);
-            }
-            else if (KeyPressed == KEY_LEFT) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left);
-            }
-            else if (KeyPressed == KEY_RIGHT) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right);
-            }
-            else if (KeyPressed == KEY_ENTER) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select);
-            }
-            else if (KeyPressed == KEY_BACKSPACE) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back);
-            }
-            else if (KeyPressed == KEY_F(1)) {
-                LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help);
-            }
             else if (KeyPressed == 27) {
                 nodelay(stdscr, TRUE);
 
@@ -245,6 +224,13 @@ int main() {
                     ungetch(27);
                 }
             }
+            LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up, KeyPressed, KEY_UP);
+            LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down, KeyPressed, KEY_DOWN);
+            LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left, KeyPressed, KEY_LEFT);
+            LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right, KeyPressed, KEY_RIGHT);
+            LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select, KeyPressed, KEY_ENTER);
+            LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back, KeyPressed, KEY_BACKSPACE);
+            LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
 
             // TODO: (marco) create UpdateAppAndRender
             app_offscreen_buffer Buffer = {};
