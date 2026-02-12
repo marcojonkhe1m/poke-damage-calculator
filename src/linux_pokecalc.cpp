@@ -2,11 +2,6 @@
 
    - saves
    - asset loading
-   - streak!!
-   - more streak
-   - yet again streak
-   - the streak continues
-   - another day, another streak
 */
 
 #define internal static
