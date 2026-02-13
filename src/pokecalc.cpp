@@ -51,6 +51,9 @@ internal void AppUpdateAndRender(
     if (!Memory->IsInitialized) {
         AppState->BlueOffset = 0;
         AppState->GreenOffset = 0;
+
+        // TODO: (marco): This may be more appropiate in the platform layer
+        Memory->IsInitialized = true;
     }
 
     if (Input->Up.EndedDown) {

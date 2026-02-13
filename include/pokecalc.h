@@ -1,5 +1,9 @@
 #pragma once
 
+#define Kilobytes(Value) ((Value) * 1024)
+#define Megabytes(Value) (Kilobytes(Value) * 1024)
+#define Gigabytes(Value) (Megabytes(Value) * 1024)
+
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 // TODO: (marco) macros: swap, min, max ...
 

@@ -168,8 +168,7 @@ int main() {
     LinuxInitColors(&GlobalColorGradientInfo);
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
     // and a struct possible defined in header file.
-    struct winsize WindowSize
-        = {};
+    struct winsize WindowSize = {};
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
@@ -177,85 +176,96 @@ int main() {
 
         GlobalRunning = 1;
 
-        app_keyboard_input Input[2] = {};
-        app_keyboard_input *NewInput = &Input[0];
-        app_keyboard_input *OldInput = &Input[1];
+        app_memory AppMemory = {};
+        AppMemory.PermanentStorageSize = Megabytes(64);
+        AppMemory.PermanentStorage = mmap(
+            NULL,
+            AppMemory.PermanentStorageSize,
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0);
 
-        uint64_t LastCycleCount = rdtsc();
-        struct timespec LastTime = {};
-        clock_gettime(CLOCK_MONOTONIC, &LastTime);
-        while (GlobalRunning) {
+        if (AppMemory.PermanentStorage) {
 
-            if (GlobalResizeRequested) {
-                GlobalResizeRequested = 0;
+            app_keyboard_input Input[2] = {};
+            app_keyboard_input *NewInput = &Input[0];
+            app_keyboard_input *OldInput = &Input[1];
 
-                ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
-                if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
-                    resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-                    LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
-                }
-                else {
-                    // TODO: (marco) logging
-                }
-            }
+            uint64_t LastCycleCount = rdtsc();
+            struct timespec LastTime = {};
+            clock_gettime(CLOCK_MONOTONIC, &LastTime);
+            while (GlobalRunning) {
 
-            app_keyboard_input *OldKeyboard = OldInput;
-            app_keyboard_input *NewKeyboard = NewInput;
+                if (GlobalResizeRequested) {
+                    GlobalResizeRequested = 0;
 
-            KeyPressed = getch();
-
-            if (KeyPressed == 'q') {
-                GlobalRunning = 0;
-            }
-            else if (KeyPressed == 27) {
-                nodelay(stdscr, TRUE);
-
-                int next = getch();
-                if (next == ERR) {
-                    // NOTE: (marco) real esc is pressed - handled below
+                    ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
+                    if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
+                        resizeterm(WindowSize.ws_row, WindowSize.ws_col);
+                        LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+                    }
+                    else {
+                        // TODO: (marco) logging
+                    }
                 }
 
-                else {
-                    ungetch(next);
-                    ungetch(27);
+                app_keyboard_input *OldKeyboard = OldInput;
+                app_keyboard_input *NewKeyboard = NewInput;
+
+                KeyPressed = getch();
+
+                if (KeyPressed == 'q') {
+                    GlobalRunning = 0;
                 }
-            }
-            LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up, KeyPressed, KEY_UP);
-            LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down, KeyPressed, KEY_DOWN);
-            LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left, KeyPressed, KEY_LEFT);
-            LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right, KeyPressed, KEY_RIGHT);
-            LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select, KeyPressed, KEY_ENTER);
-            LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back, KeyPressed, KEY_BACKSPACE);
-            LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
+                else if (KeyPressed == 27) {
+                    nodelay(stdscr, TRUE);
 
-            // TODO: (marco) create UpdateAppAndRender
-            app_offscreen_buffer Buffer = {};
-            Buffer.Memory = GlobalBackbuffer.Memory;
-            Buffer.Width = GlobalBackbuffer.Width;
-            Buffer.Height = GlobalBackbuffer.Height;
-            Buffer.Pitch = GlobalBackbuffer.Pitch;
-            color_gradient_info ColorInfo = {};
-            ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
-            ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
+                    int next = getch();
+                    if (next == ERR) {
+                        // NOTE: (marco) real esc is pressed - handled below
+                    }
 
-            AppUpdateAndRender(NewInput, &Buffer, &ColorInfo);
-            LinuxUpdateGradient(&ColorInfo);
-            LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+                    else {
+                        ungetch(next);
+                        ungetch(27);
+                    }
+                }
+                LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up, KeyPressed, KEY_UP);
+                LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down, KeyPressed, KEY_DOWN);
+                LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left, KeyPressed, KEY_LEFT);
+                LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right, KeyPressed, KEY_RIGHT);
+                LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select, KeyPressed, KEY_ENTER);
+                LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back, KeyPressed, KEY_BACKSPACE);
+                LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
 
-            napms(100);
+                // TODO: (marco) create UpdateAppAndRender
+                app_offscreen_buffer Buffer = {};
+                Buffer.Memory = GlobalBackbuffer.Memory;
+                Buffer.Width = GlobalBackbuffer.Width;
+                Buffer.Height = GlobalBackbuffer.Height;
+                Buffer.Pitch = GlobalBackbuffer.Pitch;
+                color_gradient_info ColorInfo = {};
+                ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
+                ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-            uint64_t EndCycleCount = rdtsc();
-            struct timespec EndTime = {};
-            clock_gettime(CLOCK_MONOTONIC, &EndTime);
+                AppUpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
+                LinuxUpdateGradient(&ColorInfo);
+                LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
-            // TODO: (marco) display the value here
-            uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
-            int64_t LastTimeNs = LastTime.tv_sec * 1000000000LL + LastTime.tv_nsec;
-            int64_t EndTimeNs = EndTime.tv_sec * 1000000000LL + EndTime.tv_nsec;
-            int64_t NsPerFrame = EndTimeNs - LastTimeNs;
-            float MsPerFrame = (float)NsPerFrame / 1000000.0f;
-            float FPS = 1000.0f / MsPerFrame;
-            float MCPF = ((float)CyclesElapsed / (1000.0f * 1000.0f));
+                napms(100);
+
+                uint64_t EndCycleCount = rdtsc();
+                struct timespec EndTime = {};
+                clock_gettime(CLOCK_MONOTONIC, &EndTime);
+
+                // TODO: (marco) display the value here
+                uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
+                int64_t LastTimeNs = LastTime.tv_sec * 1000000000LL + LastTime.tv_nsec;
+                int64_t EndTimeNs = EndTime.tv_sec * 1000000000LL + EndTime.tv_nsec;
+                int64_t NsPerFrame = EndTimeNs - LastTimeNs;
+                float MsPerFrame = (float)NsPerFrame / 1000000.0f;
+                float FPS = 1000.0f / MsPerFrame;
+                float MCPF = ((float)CyclesElapsed / (1000.0f * 1000.0f));
 
 #if 0
             mvprintw(0, 0, "%.02fms/f\n", MsPerFrame);
@@ -263,12 +273,16 @@ int main() {
             mvprintw(2, 0, "%.02fmc/f\n", MCPF);
             refresh();
 #endif
-            LastCycleCount = EndCycleCount;
-            LastTime = EndTime;
+                LastCycleCount = EndCycleCount;
+                LastTime = EndTime;
 
-            app_keyboard_input *Temp = NewInput;
-            NewInput = OldInput;
-            OldInput = Temp;
+                app_keyboard_input *Temp = NewInput;
+                NewInput = OldInput;
+                OldInput = Temp;
+            }
+        }
+        else {
+            // TODO: (marco) Logging
         }
     }
     else {
