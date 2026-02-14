@@ -185,7 +185,14 @@ int main() {
             -1,
             0);
 
-        if (AppMemory.PermanentStorage) {
+        AppMemory.TransientStorageSize = Gigabytes((uint64_t)4);
+        AppMemory.TransientStorage = mmap(
+            NULL,
+            AppMemory.TransientStorageSize,
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0);
+        if (AppMemory.PermanentStorage && AppMemory.TransientStorage) {
 
             app_keyboard_input Input[2] = {};
             app_keyboard_input *NewInput = &Input[0];

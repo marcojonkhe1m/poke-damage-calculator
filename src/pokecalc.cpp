@@ -47,8 +47,12 @@ internal void AppUpdateAndRender(
     app_offscreen_buffer *Buffer,
     color_gradient_info *ColorGradientInfo) {
 
+    Assert(sizeof(app_state) <= Memory->PermanentStorageSize);
+
     app_state *AppState = (app_state *)Memory->PermanentStorage;
     if (!Memory->IsInitialized) {
+
+        // NOTE:(marco): Shouldn't be necessary cause mmap clears to zero (Check this!!)
         AppState->BlueOffset = 0;
         AppState->GreenOffset = 0;
 

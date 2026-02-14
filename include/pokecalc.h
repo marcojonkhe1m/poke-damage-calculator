@@ -1,5 +1,16 @@
 #pragma once
 
+#if !defined(NDEBUG)
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+
+#define Assert(Expression) \
+    if (!(Expression)) {   \
+        *(int *)0 = 0;     \
+    }
+
 #define Kilobytes(Value) ((Value) * 1024)
 #define Megabytes(Value) (Kilobytes(Value) * 1024)
 #define Gigabytes(Value) (Megabytes(Value) * 1024)
@@ -47,6 +58,9 @@ struct app_memory {
     bool IsInitialized;
     uint64_t PermanentStorageSize;
     void *PermanentStorage;
+
+    uint64_t TransientStorageSize;
+    void *TransientStorage;
 };
 
 internal void AppUpdateAndRender(
