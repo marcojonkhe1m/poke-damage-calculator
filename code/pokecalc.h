@@ -1,15 +1,25 @@
 #pragma once
 
-#if !defined(NDEBUG)
-#define DEBUG 1
-#else
-#define DEBUG 0
-#endif
+/*
+    NOTE:(marco):
 
+    POKECALC_INTERNAL:
+        0 - Build for public release
+        1 - Build for developer only
+
+    POKECALC_SLOW:
+        0 - No slow code allowed!
+        1 - Slow code welcome
+ */
+
+#if POKECALC_SLOW
 #define Assert(Expression) \
     if (!(Expression)) {   \
         *(int *)0 = 0;     \
     }
+#else
+#define Assert(Expression)
+#endif
 
 #define Kilobytes(Value) ((Value) * 1024)
 #define Megabytes(Value) (Kilobytes(Value) * 1024)

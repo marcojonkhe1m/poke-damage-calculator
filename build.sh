@@ -1,5 +1,9 @@
 #!/bin/sh
 
-mkdir build
+if [ ! -d "build" ]; then 
+    mkdir build
+fi
 
-g++ -g code/linux_pokecalc.cpp -lncurses -o build/bin/pokecalc
+pushd build/bin
+g++ -DPOKECALC_INTERNAL=1 -DPOKECALC_SLOW=1 -DPOKECALC_LINUX=1 -g ../../code/linux_pokecalc.cpp -lncurses -o pokecalc
+popd
