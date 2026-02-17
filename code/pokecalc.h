@@ -21,12 +21,23 @@
 #define Assert(Expression)
 #endif
 
-#define Kilobytes(Value) ((Value) * 1024)
-#define Megabytes(Value) (Kilobytes(Value) * 1024)
-#define Gigabytes(Value) (Megabytes(Value) * 1024)
+// TODO: (marco): Should these always be 64 bit?
+#define Kilobytes(Value) ((Value) * 1024LL)
+#define Megabytes(Value) (Kilobytes(Value) * 1024LL)
+#define Gigabytes(Value) (Megabytes(Value) * 1024LL)
+#define Terabytes(Value) (Gigabytes(Value) * 1024LL)
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 // TODO: (marco) macros: swap, min, max ...
+
+/*
+    NOTE:(marco): Services that the platform provides to the game
+*/
+#if POKECALC_INTERNAL
+internal void *DEBUGPlatformReadEntireFile(const char *Filename);
+internal void DEBUGPlatformFreeFileMemory(void *Memory);
+internal bool *DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory);
+#endif
 
 struct app_offscreen_buffer {
     void *Memory;

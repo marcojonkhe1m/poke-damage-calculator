@@ -16,6 +16,7 @@ global_variable const int GlobalColorSteps = 64;
 #include "pokecalc.cpp"
 #include "pokecalc.h"
 
+#include <fcntl.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -37,6 +38,24 @@ static inline uint64_t rdtsc() {
     uint32_t lo, hi;
     __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi));
     return ((uint64_t)hi << 32) | lo;
+};
+
+internal void *DEBUGPlatformReadEntireFile(const char *Filename) {
+    int FileHandle = open(Filename, O_RDONLY);
+    if (FileHandle != -1) {
+        off_t lseek(int fd, off_t offset, int whence);
+    }
+    else {
+        // TODO:(marco): Logging
+    }
+
+    ssize_t read(int fd, void buf[count], size_t count);
+
+    int close(int fd);
+};
+internal void DEBUGPlatformFreeFileMemory(void *Memory) {
+};
+internal bool *DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory) {
 };
 
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
@@ -176,22 +195,26 @@ int main() {
 
         GlobalRunning = 1;
 
+#if POKECALC_INTERNAL
+        void *BaseAddress = (void *)Terabytes(2);
+#else
+        void *BaseAddress = 0;
+#endif
         app_memory AppMemory = {};
         AppMemory.PermanentStorageSize = Megabytes(64);
+        AppMemory.TransientStorageSize = Gigabytes(4);
+
+        uint64_t TotalSize = AppMemory.PermanentStorageSize + AppMemory.TransientStorageSize;
         AppMemory.PermanentStorage = mmap(
-            NULL,
-            AppMemory.PermanentStorageSize,
-            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
+            BaseAddress,
+            TotalSize,
+            PROT_READ | PROT_WRITE,
+            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
             -1,
             0);
 
-        AppMemory.TransientStorageSize = Gigabytes((uint64_t)4);
-        AppMemory.TransientStorage = mmap(
-            NULL,
-            AppMemory.TransientStorageSize,
-            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0);
+        AppMemory.TransientStorage = (uint8_t *)AppMemory.PermanentStorage + AppMemory.PermanentStorageSize;
+
         if (AppMemory.PermanentStorage && AppMemory.TransientStorage) {
 
             app_keyboard_input Input[2] = {};

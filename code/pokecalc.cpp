@@ -51,6 +51,12 @@ internal void AppUpdateAndRender(
 
     app_state *AppState = (app_state *)Memory->PermanentStorage;
     if (!Memory->IsInitialized) {
+        const char *Filename = "test.bmp";
+
+        void *BitmapMemory = DEBUGPlatformReadEntireFile(Filename);
+        if (BitmapMemory) {
+            DEBUGPlatformFreeFileMemory(BitmapMemory);
+        }
 
         // NOTE:(marco): Shouldn't be necessary cause mmap clears to zero (Check this!!)
         AppState->BlueOffset = 0;
@@ -65,6 +71,12 @@ internal void AppUpdateAndRender(
     }
     if (Input->Left.EndedDown) {
         AppState->BlueOffset += 1;
+    }
+    if (Input->Down.EndedDown) {
+        AppState->GreenOffset -= 1;
+    }
+    if (Input->Right.EndedDown) {
+        AppState->BlueOffset -= 1;
     }
 
     RenderWeirdGradient(
