@@ -4,11 +4,16 @@
    - asset loading
 */
 
+#define _LARGEFILE64_SOURCE
+
+#include <stdint.h>
+#include <unistd.h>
+
 #define internal static
 #define local_persist static
 #define global_variable static
 
-#include <stdint.h>
+typedef off_t off64;
 
 global_variable int GlobalColorBase = 16;
 global_variable const int GlobalColorSteps = 64;
@@ -23,7 +28,6 @@ global_variable const int GlobalColorSteps = 64;
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "linux_pokecalc.h"
 
@@ -41,15 +45,39 @@ static inline uint64_t rdtsc() {
 };
 
 internal void *DEBUGPlatformReadEntireFile(const char *Filename) {
+    void *Result = 0;
     int FileHandle = open(Filename, O_RDONLY);
     if (FileHandle != -1) {
-        off_t lseek(int fd, off_t offset, int whence);
+        off64 FileSize;
+        FileSize = lseek(FileHandle, 0, SEEK_END);
+        lseek(FileHandle, 0, SEEK_SET);
+        if (FileSize != -1 && FileSize != 0) {
+            Result = mmap(
+                NULL,
+                FileSize,
+                PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS,
+                -1,
+                0);
+            if (Result) {
+                ssize_t BytesRead = read(FileHandle, Result, FileSize);
+                if (BytesRead != -1) {
+                }
+                else {
+                    // TODO:(marco): Logging
+                }
+            }
+            else {
+                // TODO:(marco): Logging
+            }
+        }
+        else {
+            // TODO:(marco): Logging
+        }
     }
     else {
         // TODO:(marco): Logging
     }
-
-    ssize_t read(int fd, void buf[count], size_t count);
 
     int close(int fd);
 };
