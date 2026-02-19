@@ -44,27 +44,31 @@ static inline uint64_t rdtsc() {
     return ((uint64_t)hi << 32) | lo;
 };
 
-internal void *DEBUGPlatformReadEntireFile(const char *Filename) {
-    void *Result = 0;
-    int FileHandle = open(Filename, O_RDONLY);
-    if (FileHandle != -1) {
+internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename) {
+    debug_read_file_result Result = {};
+    int FileDescriptor = open(Filename, O_RDONLY);
+    if (FileDescriptor != -1) {
         off64 FileSize;
-        FileSize = lseek(FileHandle, 0, SEEK_END);
-        lseek(FileHandle, 0, SEEK_SET);
+        FileSize = lseek(FileDescriptor, 0, SEEK_END);
+        lseek(FileDescriptor, 0, SEEK_SET);
         if (FileSize != -1 && FileSize != 0) {
-            Result = mmap(
+            Result.Contents = mmap(
                 NULL,
                 FileSize,
                 PROT_READ | PROT_WRITE,
                 MAP_PRIVATE | MAP_ANONYMOUS,
                 -1,
                 0);
-            if (Result) {
-                ssize_t BytesRead = read(FileHandle, Result, FileSize);
-                if (BytesRead != -1) {
+            if (Result.Contents) {
+                ssize_t BytesRead = read(FileDescriptor, Result.Contents, FileSize);
+                if ((BytesRead != -1) && (FileSize == BytesRead)) {
+                    // NOTE:(marco: File read successfully
+                    Result.ContentsSize = FileSize;
                 }
                 else {
                     // TODO:(marco): Logging
+                    DEBUGPlatformFreeFileMemory(Result.Contents, FileSize);
+                    Result.Contents = 0;
                 }
             }
             else {
@@ -74,16 +78,39 @@ internal void *DEBUGPlatformReadEntireFile(const char *Filename) {
         else {
             // TODO:(marco): Logging
         }
+        close(FileDescriptor);
     }
     else {
         // TODO:(marco): Logging
     }
+    return Result;
+};
 
-    int close(int fd);
+internal void DEBUGPlatformFreeFileMemory(void *Memory, uint64_t MemorySize) {
+    if (Memory) {
+        munmap(Memory, MemorySize);
+    }
 };
-internal void DEBUGPlatformFreeFileMemory(void *Memory) {
-};
-internal bool *DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory) {
+
+internal bool DEBUGPlatformWriteEntireFile(const char *Filename, uint64_t MemorySize, void *Memory) {
+    bool Result = false;
+    int FileDescriptor = creat(Filename, S_IRWXU);
+    if (FileDescriptor != -1) {
+        ssize_t BytesWritten = write(FileDescriptor, Memory, MemorySize);
+        if (BytesWritten != -1) {
+            // NOTE:(marco: File write successfully
+            Result = (BytesWritten == MemorySize);
+        }
+        else {
+            // TODO:(marco): Logging
+        }
+
+        close(FileDescriptor);
+    }
+    else {
+        // TODO:(marco): Logging
+    }
+    return Result;
 };
 
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {

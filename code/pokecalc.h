@@ -34,9 +34,18 @@
     NOTE:(marco): Services that the platform provides to the game
 */
 #if POKECALC_INTERNAL
-internal void *DEBUGPlatformReadEntireFile(const char *Filename);
-internal void DEBUGPlatformFreeFileMemory(void *Memory);
-internal bool *DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory);
+/* WARNING:(marco):
+
+   These are not for doing anything in the shipping app - they are
+   blocking and the write doen't protect against lost data!
+ */
+struct debug_read_file_result {
+    uint64_t ContentsSize;
+    void *Contents;
+};
+internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename);
+internal void DEBUGPlatformFreeFileMemory(void *Memory, uint64_t MemorySize);
+internal bool DEBUGPlatformWriteEntireFile(const char *Filename, uint64_t MemorySize, void *Memory);
 #endif
 
 struct app_offscreen_buffer {
