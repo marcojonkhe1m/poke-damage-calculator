@@ -101,7 +101,7 @@ internal bool DEBUGPlatformWriteEntireFile(const char *Filename, uint64_t Memory
         ssize_t BytesWritten = write(FileDescriptor, Memory, MemorySize);
         if (BytesWritten != -1) {
             // NOTE:(marco: File write successfully
-            Result = (BytesWritten == MemorySize);
+            Result = ((size_t)BytesWritten == MemorySize);
         }
         else {
             // TODO:(marco): Logging
