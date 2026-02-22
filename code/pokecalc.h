@@ -40,12 +40,12 @@
    blocking and the write doen't protect against lost data!
  */
 struct debug_read_file_result {
-    uint64_t ContentsSize;
+    int64_t ContentsSize;
     void *Contents;
 };
 internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename);
-internal void DEBUGPlatformFreeFileMemory(void *Memory, uint64_t MemorySize);
-internal bool DEBUGPlatformWriteEntireFile(const char *Filename, uint64_t MemorySize, void *Memory);
+internal void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize);
+internal bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory);
 #endif
 
 struct app_offscreen_buffer {

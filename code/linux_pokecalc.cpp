@@ -65,7 +65,7 @@ internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename
                 ssize_t BytesRead = read(FileDescriptor, Result.Contents, FileSize);
                 if ((BytesRead != -1) && (FileSize == BytesRead)) {
                     // NOTE:(marco: File read successfully
-                    Result.ContentsSize = FileSize;
+                    Result.ContentsSize = (int64_t)FileSize;
                 }
                 else {
                     // TODO:(marco): Logging
@@ -88,20 +88,20 @@ internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename
     return Result;
 };
 
-internal void DEBUGPlatformFreeFileMemory(void *Memory, uint64_t MemorySize) {
+internal void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize) {
     if (Memory) {
         munmap(Memory, MemorySize);
     }
 };
 
-internal bool DEBUGPlatformWriteEntireFile(const char *Filename, uint64_t MemorySize, void *Memory) {
+internal bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory) {
     bool Result = false;
     int FileDescriptor = creat(Filename, S_IRWXU);
     if (FileDescriptor != -1) {
         ssize_t BytesWritten = write(FileDescriptor, Memory, MemorySize);
         if (BytesWritten != -1) {
             // NOTE:(marco: File write successfully
-            Result = ((size_t)BytesWritten == MemorySize);
+            Result = (BytesWritten == MemorySize);
         }
         else {
             // TODO:(marco): Logging
