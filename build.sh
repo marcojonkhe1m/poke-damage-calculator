@@ -5,5 +5,5 @@ if [ ! -d "build" ]; then
 fi
 
 pushd build/bin
-g++ -Werror -Wall -Wno-unused-variable -DPOKECALC_INTERNAL=1 -DPOKECALC_SLOW=1 -DPOKECALC_LINUX=1 -g ../../code/linux_pokecalc.cpp -lncurses -o pokecalc
+g++ -O0 -fbuiltin -Werror -Wall -Wno-unused-variable -DPOKECALC_INTERNAL=1 -DPOKECALC_SLOW=1 -DPOKECALC_LINUX=1 -g ../../code/linux_pokecalc.cpp -lncurses -o pokecalc
 popd
