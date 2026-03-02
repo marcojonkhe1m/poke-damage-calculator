@@ -265,7 +265,7 @@ int main() {
 #endif
         app_memory AppMemory = {};
         AppMemory.PermanentStorageSize = Megabytes(64);
-        AppMemory.TransientStorageSize = Gigabytes(4);
+        AppMemory.TransientStorageSize = Gigabytes(2);
 
         uint64_t TotalSize = AppMemory.PermanentStorageSize + AppMemory.TransientStorageSize;
         AppMemory.PermanentStorage = mmap(
