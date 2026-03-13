@@ -226,6 +226,21 @@ LinuxSignalHandler(int Signo, siginfo_t *Info, void *Context) {
     }
 }
 
+inline int64_t LinuxGetWallClock() {
+    int64_t Result;
+    struct timespec TimeParts = {};
+    clock_gettime(CLOCK_MONOTONIC, &TimeParts);
+    Result = TimeParts.tv_sec * 1000000000LL + TimeParts.tv_nsec;
+    return Result;
+}
+
+inline float LinuxGetSecondsElapsed(int64_t Start, int64_t End) {
+    float Result;
+    int64_t NsPerFrame = End - Start;
+    Result = (float)NsPerFrame / 1000000000.0f;
+    return Result;
+}
+
 int main() {
 
     struct sigaction Sa = {};
@@ -233,6 +248,11 @@ int main() {
     Sa.sa_flags = SA_SIGINFO;
 
     int KeyPressed;
+
+    // TODO: (marco) How do we reliably query this on Linux?
+    int MonitorRefreshHz = 60;
+    int GameUpdateHz = MonitorRefreshHz / 2;
+    float TargetSecondsElapsedPerFrame = 1.0f / (float)GameUpdateHz;
 
     sigaction(SIGINT, &Sa, NULL);
     sigaction(SIGTERM, &Sa, NULL);
@@ -285,8 +305,7 @@ int main() {
             app_keyboard_input *OldInput = &Input[1];
 
             uint64_t LastCycleCount = rdtsc();
-            struct timespec LastTime = {};
-            clock_gettime(CLOCK_MONOTONIC, &LastTime);
+            int64_t LastTime = LinuxGetWallClock();
             while (GlobalRunning) {
 
                 if (GlobalResizeRequested) {
@@ -348,30 +367,41 @@ int main() {
                 napms(100);
 
                 uint64_t EndCycleCount = rdtsc();
-                struct timespec EndTime = {};
-                clock_gettime(CLOCK_MONOTONIC, &EndTime);
-
-                // TODO: (marco) display the value here
                 uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
-                int64_t LastTimeNs = LastTime.tv_sec * 1000000000LL + LastTime.tv_nsec;
-                int64_t EndTimeNs = EndTime.tv_sec * 1000000000LL + EndTime.tv_nsec;
-                int64_t NsPerFrame = EndTimeNs - LastTimeNs;
+
+                int64_t WorkTime = LinuxGetWallClock();
+                float WorkSecondsElapsed = LinuxGetSecondsElapsed(LastTime, WorkTime);
+
+                float SecondsElapsedForFrame = WorkSecondsElapsed;
+                if (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
+
+                    while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
+                        SecondsElapsedForFrame = LinuxGetSecondsElapsed(LastTime, LinuxGetWallClock());
+                    }
+                }
+                else {
+                    // TODO: (marco) MISSED A FRAME!!
+                    // TODO: (marco) Logging
+                }
+
+#if 0
                 float MsPerFrame = (float)NsPerFrame / 1000000.0f;
                 float FPS = 1000.0f / MsPerFrame;
                 float MCPF = ((float)CyclesElapsed / (1000.0f * 1000.0f));
 
-#if 0
             mvprintw(0, 0, "%.02fms/f\n", MsPerFrame);
             mvprintw(1, 0, "%.02ff/s\n", FPS);
             mvprintw(2, 0, "%.02fmc/f\n", MCPF);
             refresh();
 #endif
-                LastCycleCount = EndCycleCount;
-                LastTime = EndTime;
 
                 app_keyboard_input *Temp = NewInput;
                 NewInput = OldInput;
                 OldInput = Temp;
+
+                int64_t EndTime = LinuxGetWallClock();
+                LastCycleCount = EndCycleCount;
+                LastTime = EndTime;
             }
         }
         else {
