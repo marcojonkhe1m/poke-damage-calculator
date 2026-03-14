@@ -226,6 +226,16 @@ LinuxSignalHandler(int Signo, siginfo_t *Info, void *Context) {
     }
 }
 
+inline void LinuxSleepNs(uint64_t NanoSeconds) {
+    struct timespec remaining, time_value;
+    remaining.tv_sec = (time_t)(NanoSeconds / 1000000000LL);
+    remaining.tv_nsec = (long)(NanoSeconds % 1000000000LL);
+
+    time_value.tv_sec = remaining.tv_sec;
+    time_value.tv_nsec = remaining.tv_nsec;
+    nanosleep(&time_value, &remaining);
+}
+
 inline int64_t LinuxGetWallClock() {
     int64_t Result;
     struct timespec TimeParts = {};
@@ -362,7 +372,6 @@ int main() {
 
                 AppUpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
                 LinuxUpdateGradient(&ColorInfo);
-                LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 
                 napms(100);
 
@@ -376,6 +385,8 @@ int main() {
                 if (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
 
                     while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
+                        uint64_t SleepNs = (uint64_t)(1000000.0f * (TargetSecondsElapsedPerFrame - SecondsElapsedForFrame));
+                        LinuxSleepNs(SleepNs);
                         SecondsElapsedForFrame = LinuxGetSecondsElapsed(LastTime, LinuxGetWallClock());
                     }
                 }
@@ -384,6 +395,7 @@ int main() {
                     // TODO: (marco) Logging
                 }
 
+                LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 #if 0
                 float MsPerFrame = (float)NsPerFrame / 1000000.0f;
                 float FPS = 1000.0f / MsPerFrame;
