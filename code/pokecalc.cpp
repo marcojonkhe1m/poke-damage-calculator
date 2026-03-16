@@ -27,7 +27,7 @@ internal void RenderWeirdGradient(
     }
 }
 
-internal void UpdateGradient(
+void UpdateGradient(
     color_gradient_info *ColorGradientInfo,
     int BlueOffset,
     int GreenOffset) {
@@ -41,7 +41,7 @@ internal void UpdateGradient(
     }
 }
 
-internal void AppUpdateAndRender(
+void AppUpdateAndRender(
     app_memory *Memory,
     app_keyboard_input *Input,
     app_offscreen_buffer *Buffer,

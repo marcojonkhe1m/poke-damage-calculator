@@ -12,6 +12,20 @@
         1 - Slow code welcome
  */
 
+#define _LARGEFILE64_SOURCE
+
+#include <stdint.h>
+#include <unistd.h>
+
+#define internal static
+#define local_persist static
+#define global_variable static
+
+global_variable int GlobalColorBase = 16;
+global_variable const int GlobalColorSteps = 64;
+
+typedef off_t off64;
+
 #if POKECALC_SLOW
 #define Assert(Expression) \
     if (!(Expression)) {   \
@@ -43,9 +57,9 @@ struct debug_read_file_result {
     int64_t ContentsSize;
     void *Contents;
 };
-internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename);
-internal void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize);
-internal bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory);
+debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename);
+void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize);
+bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory);
 #endif
 
 struct app_offscreen_buffer {
@@ -93,11 +107,10 @@ struct app_memory {
     void *TransientStorage;
 };
 
-internal void AppUpdateAndRender(
-    app_memory *AppMemory,
-    app_keyboard_input *Input,
-    app_offscreen_buffer *Buffer,
-    color_gradient_info *ColorGradientInfo);
+#define GAME_UPDATE_AND_RENDER(name) void name(app_memory *AppMemory, app_keyboard_input *Input, app_offscreen_buffer *Buffer, color_gradient_info *ColorGradientInfo)
+typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
+GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub) {
+}
 
 //
 //

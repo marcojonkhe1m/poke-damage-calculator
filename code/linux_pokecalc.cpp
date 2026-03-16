@@ -11,24 +11,9 @@
    - dr streak i presume
    - streak
 */
-
-#define _LARGEFILE64_SOURCE
-
-#include <stdint.h>
-#include <unistd.h>
-
-#define internal static
-#define local_persist static
-#define global_variable static
-
-typedef off_t off64;
-
-global_variable int GlobalColorBase = 16;
-global_variable const int GlobalColorSteps = 64;
-
-#include "pokecalc.cpp"
 #include "pokecalc.h"
 
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <ncurses.h>
 #include <signal.h>
@@ -52,7 +37,7 @@ static inline uint64_t rdtsc() {
     return ((uint64_t)hi << 32) | lo;
 };
 
-internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename) {
+debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename) {
     debug_read_file_result Result = {};
     int FileDescriptor = open(Filename, O_RDONLY);
     if (FileDescriptor != -1) {
@@ -94,13 +79,13 @@ internal debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename
     return Result;
 };
 
-internal void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize) {
+void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize) {
     if (Memory) {
         munmap(Memory, MemorySize);
     }
 };
 
-internal bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory) {
+bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory) {
     bool Result = false;
     int FileDescriptor = creat(Filename, S_IRWXU);
     if (FileDescriptor != -1) {
@@ -120,6 +105,14 @@ internal bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemoryS
     }
     return Result;
 };
+
+internal void LinuxLoadGameCode() {
+    void *GameCode = dlopen("./pokecalc.so", RTLD_LAZY);
+
+    if (GameCode) {
+        // NOTE: (marco) get correct function type with dsym
+    }
+}
 
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
     start_color();
