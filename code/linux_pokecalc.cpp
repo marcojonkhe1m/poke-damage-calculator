@@ -106,12 +106,24 @@ bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void
     return Result;
 };
 
-internal void LinuxLoadGameCode() {
-    void *GameCode = dlopen("./pokecalc.so", RTLD_LAZY);
+struct linux_app_code {
+    void *AppCodeSO;
+    app_update_and_render *UpdateAndRender;
+};
 
-    if (GameCode) {
-        // NOTE: (marco) get correct function type with dsym
+internal linux_app_code
+LinuxLoadAppCode() {
+    linux_app_code Result = {};
+
+    Result.UpdateAndRender = AppUpdateAndRenderStub;
+
+    Result.AppCodeSO = dlopen("./pokecalc.so", RTLD_LAZY);
+
+    if (Result.AppCodeSO) {
+        Result.UpdateAndRender = (app_update_and_render *)dlsym(Result.AppCodeSO, "AppUpdateAndRender");
     }
+
+    return Result;
 }
 
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
@@ -246,6 +258,7 @@ inline float LinuxGetSecondsElapsed(int64_t Start, int64_t End) {
 
 int main() {
 
+    linux_app_code App = LinuxLoadAppCode();
     struct sigaction Sa = {};
     Sa.sa_sigaction = LinuxSignalHandler;
     Sa.sa_flags = SA_SIGINFO;
@@ -254,8 +267,8 @@ int main() {
 
     // TODO: (marco) How do we reliably query this on Linux?
     int MonitorRefreshHz = 60;
-    int GameUpdateHz = MonitorRefreshHz / 2;
-    float TargetSecondsElapsedPerFrame = 1.0f / (float)GameUpdateHz;
+    int AppUpdateHz = MonitorRefreshHz / 2;
+    float TargetSecondsElapsedPerFrame = 1.0f / (float)AppUpdateHz;
 
     sigaction(SIGINT, &Sa, NULL);
     sigaction(SIGTERM, &Sa, NULL);
@@ -363,7 +376,7 @@ int main() {
                 ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
                 ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-                AppUpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
+                App.UpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
                 LinuxUpdateGradient(&ColorInfo);
 
                 napms(100);

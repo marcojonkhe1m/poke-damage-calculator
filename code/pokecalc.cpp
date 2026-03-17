@@ -41,16 +41,12 @@ void UpdateGradient(
     }
 }
 
-void AppUpdateAndRender(
-    app_memory *Memory,
-    app_keyboard_input *Input,
-    app_offscreen_buffer *Buffer,
-    color_gradient_info *ColorGradientInfo) {
+APP_UPDATE_AND_RENDER(app_update_and_render) {
 
-    Assert(sizeof(app_state) <= Memory->PermanentStorageSize);
+    Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
 
-    app_state *AppState = (app_state *)Memory->PermanentStorage;
-    if (!Memory->IsInitialized) {
+    app_state *AppState = (app_state *)AppMemory->PermanentStorage;
+    if (!AppMemory->IsInitialized) {
         const char *Filename = "code/pokecalc.cpp";
 
         debug_read_file_result File = DEBUGPlatformReadEntireFile(Filename);
@@ -64,7 +60,7 @@ void AppUpdateAndRender(
         AppState->GreenOffset = 0;
 
         // TODO: (marco): This may be more appropiate in the platform layer
-        Memory->IsInitialized = true;
+        AppMemory->IsInitialized = true;
     }
 
     if (Input->Up.EndedDown) {
