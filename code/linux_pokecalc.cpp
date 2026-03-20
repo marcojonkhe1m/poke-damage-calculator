@@ -38,7 +38,7 @@ static inline uint64_t rdtsc() {
 };
 
 debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename) {
-    debug_read_file_result Result = {};
+    debug_read_file_result Result = { };
     int FileDescriptor = open(Filename, O_RDONLY);
     if (FileDescriptor != -1) {
         off64 FileSize;
@@ -109,18 +109,24 @@ bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void
 struct linux_app_code {
     void *AppCodeSO;
     app_update_and_render *UpdateAndRender;
+
+    bool IsValid;
 };
 
 internal linux_app_code
 LinuxLoadAppCode() {
-    linux_app_code Result = {};
-
-    Result.UpdateAndRender = AppUpdateAndRenderStub;
+    linux_app_code Result = { };
 
     Result.AppCodeSO = dlopen("./pokecalc.so", RTLD_LAZY);
 
     if (Result.AppCodeSO) {
         Result.UpdateAndRender = (app_update_and_render *)dlsym(Result.AppCodeSO, "AppUpdateAndRender");
+
+        Result.IsValid = Result.UpdateAndRender;
+    }
+
+    if (!Result.IsValid) {
+        Result.UpdateAndRender = AppUpdateAndRenderStub;
     }
 
     return Result;
@@ -243,7 +249,7 @@ inline void LinuxSleepNs(uint64_t NanoSeconds) {
 
 inline int64_t LinuxGetWallClock() {
     int64_t Result;
-    struct timespec TimeParts = {};
+    struct timespec TimeParts = { };
     clock_gettime(CLOCK_MONOTONIC, &TimeParts);
     Result = TimeParts.tv_sec * 1000000000LL + TimeParts.tv_nsec;
     return Result;
@@ -259,7 +265,7 @@ inline float LinuxGetSecondsElapsed(int64_t Start, int64_t End) {
 int main() {
 
     linux_app_code App = LinuxLoadAppCode();
-    struct sigaction Sa = {};
+    struct sigaction Sa = { };
     Sa.sa_sigaction = LinuxSignalHandler;
     Sa.sa_flags = SA_SIGINFO;
 
@@ -286,7 +292,7 @@ int main() {
     LinuxInitColors(&GlobalColorGradientInfo);
     // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
     // and a struct possible defined in header file.
-    struct winsize WindowSize = {};
+    struct winsize WindowSize = { };
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
         resizeterm(WindowSize.ws_row, WindowSize.ws_col);
@@ -299,7 +305,7 @@ int main() {
 #else
         void *BaseAddress = 0;
 #endif
-        app_memory AppMemory = {};
+        app_memory AppMemory = { };
         AppMemory.PermanentStorageSize = Megabytes(64);
         AppMemory.TransientStorageSize = Gigabytes(2);
 
@@ -316,7 +322,7 @@ int main() {
 
         if (AppMemory.PermanentStorage && AppMemory.TransientStorage) {
 
-            app_keyboard_input Input[2] = {};
+            app_keyboard_input Input[2] = { };
             app_keyboard_input *NewInput = &Input[0];
             app_keyboard_input *OldInput = &Input[1];
 
@@ -367,12 +373,12 @@ int main() {
                 LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
 
                 // TODO: (marco) create UpdateAppAndRender
-                app_offscreen_buffer Buffer = {};
+                app_offscreen_buffer Buffer = { };
                 Buffer.Memory = GlobalBackbuffer.Memory;
                 Buffer.Width = GlobalBackbuffer.Width;
                 Buffer.Height = GlobalBackbuffer.Height;
                 Buffer.Pitch = GlobalBackbuffer.Pitch;
-                color_gradient_info ColorInfo = {};
+                color_gradient_info ColorInfo = { };
                 ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
                 ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 

@@ -41,7 +41,7 @@ void UpdateGradient(
     }
 }
 
-APP_UPDATE_AND_RENDER(app_update_and_render) {
+APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
 
     Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
 
