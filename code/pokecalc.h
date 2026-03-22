@@ -57,9 +57,16 @@ struct debug_read_file_result {
     int64_t ContentsSize;
     void *Contents;
 };
-debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename);
-void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize);
-bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory);
+
+#define DEBUG_PLATFORM_FREE_FILE_MEMORY(name) void name(void *Memory, int64_t MemorySize)
+typedef DEBUG_PLATFORM_FREE_FILE_MEMORY(debug_platform_free_file_memory);
+
+#define DEBUG_PLATFORM_READ_ENTIRE_FILE(name) debug_read_file_result name(const char *Filename)
+typedef DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file);
+
+#define DEBUG_PLATFORM_WRITE_ENTIRE_FILE(name) bool name(const char *Filename, int64_t MemorySize, void *Memory)
+typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file);
+
 #endif
 
 struct app_offscreen_buffer {
@@ -105,6 +112,10 @@ struct app_memory {
 
     uint64_t TransientStorageSize;
     void *TransientStorage;
+
+    debug_platform_free_file_memory *DEBUGPlatformFreeFileMemory;
+    debug_platform_read_entire_file *DEBUGPlatformReadEntireFile;
+    debug_platform_write_entire_file *DEBUGPlatformWriteEntireFile;
 };
 
 #define APP_UPDATE_AND_RENDER(name) void name(app_memory *AppMemory, app_keyboard_input *Input, app_offscreen_buffer *Buffer, color_gradient_info *ColorGradientInfo)

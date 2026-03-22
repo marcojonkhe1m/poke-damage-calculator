@@ -41,7 +41,7 @@ void UpdateGradient(
     }
 }
 
-APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
+extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
 
     Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
 
@@ -49,10 +49,10 @@ APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
     if (!AppMemory->IsInitialized) {
         const char *Filename = "code/pokecalc.cpp";
 
-        debug_read_file_result File = DEBUGPlatformReadEntireFile(Filename);
+        debug_read_file_result File = AppMemory->DEBUGPlatformReadEntireFile(Filename);
         if (File.Contents) {
-            DEBUGPlatformWriteEntireFile("data/test.out", File.ContentsSize, File.Contents);
-            DEBUGPlatformFreeFileMemory(File.Contents, File.ContentsSize);
+            AppMemory->DEBUGPlatformWriteEntireFile("data/test.out", File.ContentsSize, File.Contents);
+            AppMemory->DEBUGPlatformFreeFileMemory(File.Contents, File.ContentsSize);
         }
 
         // NOTE:(marco): Shouldn't be necessary cause mmap clears to zero (Check this!!)

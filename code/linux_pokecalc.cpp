@@ -37,7 +37,13 @@ static inline uint64_t rdtsc() {
     return ((uint64_t)hi << 32) | lo;
 };
 
-debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename) {
+DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory) {
+    if (Memory) {
+        munmap(Memory, MemorySize);
+    }
+};
+
+DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile) {
     debug_read_file_result Result = { };
     int FileDescriptor = open(Filename, O_RDONLY);
     if (FileDescriptor != -1) {
@@ -79,13 +85,7 @@ debug_read_file_result DEBUGPlatformReadEntireFile(const char *Filename) {
     return Result;
 };
 
-void DEBUGPlatformFreeFileMemory(void *Memory, int64_t MemorySize) {
-    if (Memory) {
-        munmap(Memory, MemorySize);
-    }
-};
-
-bool DEBUGPlatformWriteEntireFile(const char *Filename, int64_t MemorySize, void *Memory) {
+DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile) {
     bool Result = false;
     int FileDescriptor = creat(Filename, S_IRWXU);
     if (FileDescriptor != -1) {
@@ -117,7 +117,7 @@ internal linux_app_code
 LinuxLoadAppCode() {
     linux_app_code Result = { };
 
-    Result.AppCodeSO = dlopen("./pokecalc.so", RTLD_LAZY);
+    Result.AppCodeSO = dlopen("./libpokecalc.so", RTLD_NOW);
 
     if (Result.AppCodeSO) {
         Result.UpdateAndRender = (app_update_and_render *)dlsym(Result.AppCodeSO, "AppUpdateAndRender");
@@ -130,6 +130,15 @@ LinuxLoadAppCode() {
     }
 
     return Result;
+}
+
+internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
+    if (AppCode->AppCodeSO) {
+        dlclose(AppCode->AppCodeSO);
+    }
+
+    AppCode->IsValid = false;
+    AppCode->UpdateAndRender = AppUpdateAndRenderStub;
 }
 
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
@@ -308,6 +317,9 @@ int main() {
         app_memory AppMemory = { };
         AppMemory.PermanentStorageSize = Megabytes(64);
         AppMemory.TransientStorageSize = Gigabytes(2);
+        AppMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
+        AppMemory.DEBUGPlatformReadEntireFile = DEBUGPlatformReadEntireFile;
+        AppMemory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
 
         uint64_t TotalSize = AppMemory.PermanentStorageSize + AppMemory.TransientStorageSize;
         AppMemory.PermanentStorage = mmap(
