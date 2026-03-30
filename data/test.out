@@ -27,7 +27,7 @@ internal void RenderWeirdGradient(
     }
 }
 
-internal void UpdateGradient(
+void UpdateGradient(
     color_gradient_info *ColorGradientInfo,
     int BlueOffset,
     int GreenOffset) {
@@ -41,22 +41,18 @@ internal void UpdateGradient(
     }
 }
 
-internal void AppUpdateAndRender(
-    app_memory *Memory,
-    app_keyboard_input *Input,
-    app_offscreen_buffer *Buffer,
-    color_gradient_info *ColorGradientInfo) {
+extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
 
-    Assert(sizeof(app_state) <= Memory->PermanentStorageSize);
+    Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
 
-    app_state *AppState = (app_state *)Memory->PermanentStorage;
-    if (!Memory->IsInitialized) {
+    app_state *AppState = (app_state *)AppMemory->PermanentStorage;
+    if (!AppMemory->IsInitialized) {
         const char *Filename = "code/pokecalc.cpp";
 
-        debug_read_file_result File = DEBUGPlatformReadEntireFile(Filename);
+        debug_read_file_result File = AppMemory->DEBUGPlatformReadEntireFile(Filename);
         if (File.Contents) {
-            DEBUGPlatformWriteEntireFile("data/test.out", File.ContentsSize, File.Contents);
-            DEBUGPlatformFreeFileMemory(File.Contents, File.ContentsSize);
+            AppMemory->DEBUGPlatformWriteEntireFile("data/test.out", File.ContentsSize, File.Contents);
+            AppMemory->DEBUGPlatformFreeFileMemory(File.Contents, File.ContentsSize);
         }
 
         // NOTE:(marco): Shouldn't be necessary cause mmap clears to zero (Check this!!)
@@ -64,7 +60,7 @@ internal void AppUpdateAndRender(
         AppState->GreenOffset = 0;
 
         // TODO: (marco): This may be more appropiate in the platform layer
-        Memory->IsInitialized = true;
+        AppMemory->IsInitialized = true;
     }
 
     if (Input->Up.EndedDown) {

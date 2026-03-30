@@ -117,7 +117,7 @@ internal linux_app_code
 LinuxLoadAppCode() {
     linux_app_code Result = { };
 
-    Result.AppCodeSO = dlopen("./libpokecalc.so", RTLD_NOW);
+    Result.AppCodeSO = dlopen("./build/bin/libpokecalc.so", RTLD_NOW);
 
     if (Result.AppCodeSO) {
         Result.UpdateAndRender = (app_update_and_render *)dlsym(Result.AppCodeSO, "AppUpdateAndRender");
@@ -131,7 +131,7 @@ LinuxLoadAppCode() {
 
     return Result;
 }
-
+/*
 internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
     if (AppCode->AppCodeSO) {
         dlclose(AppCode->AppCodeSO);
@@ -140,7 +140,7 @@ internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
     AppCode->IsValid = false;
     AppCode->UpdateAndRender = AppUpdateAndRenderStub;
 }
-
+*/
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
     start_color();
     use_default_colors();
@@ -273,10 +273,10 @@ inline float LinuxGetSecondsElapsed(int64_t Start, int64_t End) {
 
 int main() {
 
-    linux_app_code App = LinuxLoadAppCode();
     struct sigaction Sa = { };
     Sa.sa_sigaction = LinuxSignalHandler;
     Sa.sa_flags = SA_SIGINFO;
+    linux_app_code App = LinuxLoadAppCode();
 
     int KeyPressed;
 
@@ -384,7 +384,6 @@ int main() {
                 LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back, KeyPressed, KEY_BACKSPACE);
                 LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
 
-                // TODO: (marco) create UpdateAppAndRender
                 app_offscreen_buffer Buffer = { };
                 Buffer.Memory = GlobalBackbuffer.Memory;
                 Buffer.Width = GlobalBackbuffer.Width;
