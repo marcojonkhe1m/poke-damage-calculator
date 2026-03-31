@@ -131,7 +131,6 @@ LinuxLoadAppCode() {
 
     return Result;
 }
-/*
 internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
     if (AppCode->AppCodeSO) {
         dlclose(AppCode->AppCodeSO);
@@ -140,7 +139,7 @@ internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
     AppCode->IsValid = false;
     AppCode->UpdateAndRender = AppUpdateAndRenderStub;
 }
-*/
+
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
     start_color();
     use_default_colors();
@@ -271,12 +270,21 @@ inline float LinuxGetSecondsElapsed(int64_t Start, int64_t End) {
     return Result;
 }
 
+linux_app_code App = LinuxLoadAppCode();
+uint32_t LoadCounter = 0;
+
 int main() {
 
+    if (LoadCounter++ > 120) {
+        LinuxUnloadAppCode(&App);
+        App = LinuxLoadAppCode();
+        LoadCounter = 0;
+    }
+
+    linux_app_code App = LinuxLoadAppCode();
     struct sigaction Sa = { };
     Sa.sa_sigaction = LinuxSignalHandler;
     Sa.sa_flags = SA_SIGINFO;
-    linux_app_code App = LinuxLoadAppCode();
 
     int KeyPressed;
 
