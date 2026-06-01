@@ -108,6 +108,7 @@ DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile) {
 
 struct linux_app_code {
     void *AppCodeSO;
+    // WARNING: (marco) this can be null and should be checked
     app_update_and_render *UpdateAndRender;
 
     bool IsValid;
@@ -126,7 +127,7 @@ LinuxLoadAppCode() {
     }
 
     if (!Result.IsValid) {
-        Result.UpdateAndRender = AppUpdateAndRenderStub;
+        Result.UpdateAndRender = 0;
     }
 
     return Result;
@@ -137,7 +138,7 @@ internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
     }
 
     AppCode->IsValid = false;
-    AppCode->UpdateAndRender = AppUpdateAndRenderStub;
+    AppCode->UpdateAndRender = 0;
 }
 
 internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
@@ -401,7 +402,9 @@ int main() {
                 ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
                 ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
 
-                App.UpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
+                if (App.UpdateAndRender) {
+                    App.UpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
+                }
                 LinuxUpdateGradient(&ColorInfo);
 
                 napms(100);

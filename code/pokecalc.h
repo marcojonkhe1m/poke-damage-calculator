@@ -120,8 +120,6 @@ struct app_memory {
 
 #define APP_UPDATE_AND_RENDER(name) void name(app_memory *AppMemory, app_keyboard_input *Input, app_offscreen_buffer *Buffer, color_gradient_info *ColorGradientInfo)
 typedef APP_UPDATE_AND_RENDER(app_update_and_render);
-APP_UPDATE_AND_RENDER(AppUpdateAndRenderStub) {
-}
 
 //
 //
