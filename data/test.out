@@ -76,12 +76,6 @@ extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
         AppState->BlueOffset -= 1;
     }
 
-    RenderWeirdGradient(
-        Buffer,
-        ColorGradientInfo,
-        AppState->BlueOffset,
-        AppState->GreenOffset);
-
     UpdateGradient(
         ColorGradientInfo,
         AppState->BlueOffset,

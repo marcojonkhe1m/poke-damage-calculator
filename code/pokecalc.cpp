@@ -2,6 +2,18 @@
 //
 #include "pokecalc.h"
 
+extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
+
+    Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
+
+    app_state *AppState = (app_state *)AppMemory->PermanentStorage;
+    if (!AppMemory->IsInitialized) {
+
+        AppMemory->IsInitialized = true;
+    }
+}
+
+/*
 internal void RenderWeirdGradient(
     app_offscreen_buffer *Buffer,
     color_gradient_info *ColorGradientInfo,
@@ -40,50 +52,4 @@ void UpdateGradient(
         ColorGradientInfo->Green[i] = (uint8_t)(y % ColorGradientInfo->ColorSteps);
     }
 }
-
-extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
-
-    Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
-
-    app_state *AppState = (app_state *)AppMemory->PermanentStorage;
-    if (!AppMemory->IsInitialized) {
-        const char *Filename = "code/pokecalc.cpp";
-
-        debug_read_file_result File = AppMemory->DEBUGPlatformReadEntireFile(Filename);
-        if (File.Contents) {
-            AppMemory->DEBUGPlatformWriteEntireFile("data/test.out", File.ContentsSize, File.Contents);
-            AppMemory->DEBUGPlatformFreeFileMemory(File.Contents, File.ContentsSize);
-        }
-
-        // NOTE:(marco): Shouldn't be necessary cause mmap clears to zero (Check this!!)
-        AppState->BlueOffset = 0;
-        AppState->GreenOffset = 0;
-
-        // TODO: (marco): This may be more appropiate in the platform layer
-        AppMemory->IsInitialized = true;
-    }
-
-    if (Input->Up.EndedDown) {
-        AppState->GreenOffset += 1;
-    }
-    if (Input->Left.EndedDown) {
-        AppState->BlueOffset += 1;
-    }
-    if (Input->Down.EndedDown) {
-        AppState->GreenOffset -= 1;
-    }
-    if (Input->Right.EndedDown) {
-        AppState->BlueOffset -= 1;
-    }
-
-    RenderWeirdGradient(
-        Buffer,
-        ColorGradientInfo,
-        AppState->BlueOffset,
-        AppState->GreenOffset);
-
-    UpdateGradient(
-        ColorGradientInfo,
-        AppState->BlueOffset,
-        AppState->GreenOffset);
-}
+*/
