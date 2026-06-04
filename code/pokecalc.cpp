@@ -2,6 +2,32 @@
 //
 #include "pokecalc.h"
 
+internal void DrawRectangle(app_offscreen_buffer *Buffer, float RealMinX, float RealMinY, float RealMaxX, float RealMaxY) {
+    int MinX = RoundFloatToInt(RealMinX);
+    int MinY = RoundFloatToInt(RealMinY);
+    int MaxX = RoundFloatToInt(RealMaxX);
+    int MaxY = RoundFloatToInt(RealMaxY);
+
+    if (MinX < 0) {
+        MinX = 0;
+    }
+
+    if (MinY < 0) {
+        MinY = 0;
+    }
+
+    if (MaxX > Buffer->Width) {
+        MaxX = Buffer->Width;
+    }
+
+    if (MaxY > Buffer->Height) {
+        MaxX = Buffer->Height;
+    }
+
+    uint8_t *EndOfBuffer = (uint8_t *)Buffer->Memory + Buffer->Pitch * Buffer->Height;
+    // TODO: (marco) Add color
+}
+
 extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
 
     Assert(sizeof(app_state) <= AppMemory->PermanentStorageSize);
