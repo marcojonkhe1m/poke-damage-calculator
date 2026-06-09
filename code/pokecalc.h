@@ -74,6 +74,7 @@ struct app_offscreen_buffer {
     int Width;
     int Height;
     int Pitch;
+    int BytesPerPixel;
 };
 
 struct color_gradient_info {

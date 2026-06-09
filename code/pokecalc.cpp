@@ -2,6 +2,12 @@
 //
 #include "pokecalc.h"
 
+internal int RoundFloatToInt(float Float) {
+    int Result = (int)(Float + 0.5f);
+    // TODO: (marco): Intrincic????
+    return Result;
+}
+
 internal void DrawRectangle(app_offscreen_buffer *Buffer, float RealMinX, float RealMinY, float RealMaxX, float RealMaxY) {
     int MinX = RoundFloatToInt(RealMinX);
     int MinY = RoundFloatToInt(RealMinY);
@@ -24,8 +30,17 @@ internal void DrawRectangle(app_offscreen_buffer *Buffer, float RealMinX, float 
         MaxX = Buffer->Height;
     }
 
-    uint8_t *EndOfBuffer = (uint8_t *)Buffer->Memory + Buffer->Pitch * Buffer->Height;
     // TODO: (marco) Add color
+    uint32_t Color = 0xFFFFFFFF;
+
+    uint8_t *Row = ((uint8_t *)Buffer->Memory + MinX * Buffer->BytesPerPixel + MinY * Buffer->Pitch);
+    for (int y = 0; y < MaxY; ++y) {
+        uint32_t *Pixel = (uint32_t *)Row;
+        for (int x = 0; x < MaxX; ++x) {
+            *Pixel++ = Color;
+        }
+    }
+    Row += Buffer->Pitch;
 }
 
 extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
@@ -37,6 +52,8 @@ extern "C" APP_UPDATE_AND_RENDER(AppUpdateAndRender) {
 
         AppMemory->IsInitialized = true;
     }
+
+    DrawRectangle(Buffer, 10.0f, 10.0f, 30.0f, 30.0f);
 }
 
 /*
