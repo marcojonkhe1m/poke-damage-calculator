@@ -6,6 +6,7 @@ struct linux_offscreen_buffer {
     int Width;
     int Height;
     int Pitch;
+    int ByterPerPixel;
 };
 
 struct linux_color_gradient_info {

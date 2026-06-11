@@ -141,49 +141,6 @@ internal void LinuxUnloadAppCode(linux_app_code *AppCode) {
     AppCode->UpdateAndRender = 0;
 }
 
-internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
-    start_color();
-    use_default_colors();
-
-    ColorGradientInfo->ColorBase = GlobalColorBase;
-    ColorGradientInfo->ColorSteps = GlobalColorSteps;
-    int Base = GlobalColorBase;
-    int Steps = GlobalColorSteps;
-
-    if (COLORS < Base + Steps) {
-        return;
-    }
-
-    for (int i = 0; i < Steps; i++) {
-        int Blue = 1000 - (i * 1000 / (Steps - 1));
-        int Green = (i * 1000 / (Steps - 1));
-
-        init_color(Base + i, 0, Green, Blue);
-
-        init_pair(
-            Base + i,
-            COLOR_BLACK,
-            Base + i);
-    }
-}
-
-internal void LinuxUpdateGradient(color_gradient_info *ColorGradientInfo) {
-    int Base = ColorGradientInfo->ColorBase;
-    int Steps = ColorGradientInfo->ColorSteps;
-
-    for (int i = 0; i < Steps; i++) {
-        int Blue = 1000 - (ColorGradientInfo->Blue[i] * 1000 / (Steps - 1));
-        int Green = (ColorGradientInfo->Green[i] * 1000 / (Steps - 1));
-
-        init_color(Base + i, 0, Green, Blue);
-
-        init_pair(
-            Base + i,
-            COLOR_BLACK,
-            Base + i);
-    }
-}
-
 internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Width, int Height) {
 
     // TODO: (marco) Bulletproof this
@@ -194,12 +151,12 @@ internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Widt
 
     Buffer->Width = Width;
     Buffer->Height = Height;
-    int BytesPerChar = sizeof(chtype);
+    Buffer->ByterPerPixel = sizeof(chtype);
 
-    Buffer->Size = BytesPerChar * Buffer->Width * Buffer->Height;
+    Buffer->Size = Buffer->BytesPerPixel * Buffer->Width * Buffer->Height;
     Buffer->Memory = mmap(NULL, Buffer->Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-    Buffer->Pitch = Buffer->Width * BytesPerChar;
+    Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
 }
 
 // TODO: (marco) This actually uses nCurses to write to the terminal line by line. line is more optimized then cell I believe. Check this maybe?
@@ -460,3 +417,48 @@ int main() {
     endwin();
     return 0;
 }
+
+/*
+internal void LinuxInitColors(linux_color_gradient_info *ColorGradientInfo) {
+    start_color();
+    use_default_colors();
+
+    ColorGradientInfo->ColorBase = GlobalColorBase;
+    ColorGradientInfo->ColorSteps = GlobalColorSteps;
+    int Base = GlobalColorBase;
+    int Steps = GlobalColorSteps;
+
+    if (COLORS < Base + Steps) {
+        return;
+    }
+
+    for (int i = 0; i < Steps; i++) {
+        int Blue = 1000 - (i * 1000 / (Steps - 1));
+        int Green = (i * 1000 / (Steps - 1));
+
+        init_color(Base + i, 0, Green, Blue);
+
+        init_pair(
+            Base + i,
+            COLOR_BLACK,
+            Base + i);
+    }
+}
+
+internal void LinuxUpdateGradient(color_gradient_info *ColorGradientInfo) {
+    int Base = ColorGradientInfo->ColorBase;
+    int Steps = ColorGradientInfo->ColorSteps;
+
+    for (int i = 0; i < Steps; i++) {
+        int Blue = 1000 - (ColorGradientInfo->Blue[i] * 1000 / (Steps - 1));
+        int Green = (ColorGradientInfo->Green[i] * 1000 / (Steps - 1));
+
+        init_color(Base + i, 0, Green, Blue);
+
+        init_pair(
+            Base + i,
+            COLOR_BLACK,
+            Base + i);
+    }
+}
+*/
