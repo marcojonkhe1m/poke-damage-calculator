@@ -29,7 +29,6 @@ global_variable volatile sig_atomic_t GlobalRunning;
 global_variable volatile sig_atomic_t GlobalResizeRequested;
 
 global_variable linux_offscreen_buffer GlobalBackbuffer;
-global_variable linux_color_gradient_info GlobalColorGradientInfo;
 
 static inline uint64_t rdtsc() {
     uint32_t lo, hi;
@@ -151,7 +150,7 @@ internal void LinuxResizeTerminalBuffer(linux_offscreen_buffer *Buffer, int Widt
 
     Buffer->Width = Width;
     Buffer->Height = Height;
-    Buffer->ByterPerPixel = sizeof(chtype);
+    Buffer->BytesPerPixel = sizeof(chtype);
 
     Buffer->Size = Buffer->BytesPerPixel * Buffer->Width * Buffer->Height;
     Buffer->Memory = mmap(NULL, Buffer->Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -169,10 +168,19 @@ internal void LinuxPresentBuffer(linux_offscreen_buffer *Buffer, int Width, int 
         uint32_t *Cell = (uint32_t *)BufferRow;
 
         for (int x = 0; x < Width; ++x) {
-            char Character = (uint8_t)(*Cell & 0xFF);
-            uint8_t ForegroundColor = (uint8_t)((*Cell >> 8) & 0xFF);
+            uint8_t R_8 = (uint8_t)((*Cell >> 16) & 0xFF);
+            uint8_t G_8 = (uint8_t)((*Cell >> 8) & 0xFF);
+            uint8_t B_8 = (uint8_t)((*Cell) & 0xFF);
 
-            TargetRow[x] = Character | COLOR_PAIR(ForegroundColor);
+            // NOTE: (marco): nCurses uses a range between 0...1000 for RGB
+            short R = (short)(R_8 * 1000 / 255);
+            short G = (short)(G_8 * 1000 / 255);
+            short B = (short)(B_8 * 1000 / 255);
+
+            init_color(x + 16, R, G, B);
+            init_pair(x + 1, x + 16, x + 16);
+
+            TargetRow[x] = ' ' | COLOR_PAIR(x + 1);
             Cell++;
         }
         mvaddchnstr(y, 0, TargetRow, Width);
@@ -257,136 +265,136 @@ int main() {
     sigaction(SIGWINCH, &Sa, NULL);
 
     ESCDELAY = 25;
+    setenv("TERM", "xterm-256color", 0);
     initscr();
+    start_color();
     raw();
     noecho();
     nodelay(stdscr, TRUE);
     keypad(stdscr, TRUE);
     curs_set(0);
 
-    LinuxInitColors(&GlobalColorGradientInfo);
-    // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
-    // and a struct possible defined in header file.
-    struct winsize WindowSize = { };
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
+    if (has_colors() && can_change_color()) {
 
-        resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-        LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+        // TODO:(marco) Take this out and replace with a function, a clamp to ensure valid parameter
+        // and a struct possible defined in header file.
+        struct winsize WindowSize = { };
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize) == 0) {
 
-        GlobalRunning = 1;
+            resizeterm(WindowSize.ws_row, WindowSize.ws_col);
+            LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+
+            GlobalRunning = 1;
 
 #if POKECALC_INTERNAL
-        void *BaseAddress = (void *)Terabytes(2);
+            void *BaseAddress = (void *)Terabytes(2);
 #else
-        void *BaseAddress = 0;
+            void *BaseAddress = 0;
 #endif
-        app_memory AppMemory = { };
-        AppMemory.PermanentStorageSize = Megabytes(64);
-        AppMemory.TransientStorageSize = Gigabytes(2);
-        AppMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
-        AppMemory.DEBUGPlatformReadEntireFile = DEBUGPlatformReadEntireFile;
-        AppMemory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
+            app_memory AppMemory = { };
+            AppMemory.PermanentStorageSize = Megabytes(64);
+            AppMemory.TransientStorageSize = Gigabytes(2);
+            AppMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
+            AppMemory.DEBUGPlatformReadEntireFile = DEBUGPlatformReadEntireFile;
+            AppMemory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
 
-        uint64_t TotalSize = AppMemory.PermanentStorageSize + AppMemory.TransientStorageSize;
-        AppMemory.PermanentStorage = mmap(
-            BaseAddress,
-            TotalSize,
-            PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
-            -1,
-            0);
+            uint64_t TotalSize = AppMemory.PermanentStorageSize + AppMemory.TransientStorageSize;
+            AppMemory.PermanentStorage = mmap(
+                BaseAddress,
+                TotalSize,
+                PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0);
 
-        AppMemory.TransientStorage = (uint8_t *)AppMemory.PermanentStorage + AppMemory.PermanentStorageSize;
+            AppMemory.TransientStorage = (uint8_t *)AppMemory.PermanentStorage + AppMemory.PermanentStorageSize;
 
-        if (AppMemory.PermanentStorage && AppMemory.TransientStorage) {
+            if (AppMemory.PermanentStorage && AppMemory.TransientStorage) {
 
-            app_keyboard_input Input[2] = { };
-            app_keyboard_input *NewInput = &Input[0];
-            app_keyboard_input *OldInput = &Input[1];
+                app_keyboard_input Input[2] = { };
+                app_keyboard_input *NewInput = &Input[0];
+                app_keyboard_input *OldInput = &Input[1];
 
-            uint64_t LastCycleCount = rdtsc();
-            int64_t LastTime = LinuxGetWallClock();
-            while (GlobalRunning) {
+                uint64_t LastCycleCount = rdtsc();
+                int64_t LastTime = LinuxGetWallClock();
+                while (GlobalRunning) {
 
-                if (GlobalResizeRequested) {
-                    GlobalResizeRequested = 0;
+                    if (GlobalResizeRequested) {
+                        GlobalResizeRequested = 0;
 
-                    ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
-                    if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
-                        resizeterm(WindowSize.ws_row, WindowSize.ws_col);
-                        LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+                        ioctl(STDOUT_FILENO, TIOCGWINSZ, &WindowSize);
+                        if (WindowSize.ws_row > 0 && WindowSize.ws_col > 0) {
+                            resizeterm(WindowSize.ws_row, WindowSize.ws_col);
+                            LinuxResizeTerminalBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+                        }
+                        else {
+                            // TODO: (marco) logging
+                        }
+                    }
+
+                    app_keyboard_input *OldKeyboard = OldInput;
+                    app_keyboard_input *NewKeyboard = NewInput;
+
+                    KeyPressed = getch();
+
+                    if (KeyPressed == 'q') {
+                        GlobalRunning = 0;
+                    }
+                    else if (KeyPressed == 27) {
+                        nodelay(stdscr, TRUE);
+
+                        int next = getch();
+                        if (next == ERR) {
+                            // NOTE: (marco) real esc is pressed - handled below
+                        }
+
+                        else {
+                            ungetch(next);
+                            ungetch(27);
+                        }
+                    }
+                    LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up, KeyPressed, KEY_UP);
+                    LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down, KeyPressed, KEY_DOWN);
+                    LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left, KeyPressed, KEY_LEFT);
+                    LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right, KeyPressed, KEY_RIGHT);
+                    LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select, KeyPressed, KEY_ENTER);
+                    LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back, KeyPressed, KEY_BACKSPACE);
+                    LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
+
+                    app_offscreen_buffer Buffer = { };
+                    Buffer.Memory = GlobalBackbuffer.Memory;
+                    Buffer.Width = GlobalBackbuffer.Width;
+                    Buffer.Height = GlobalBackbuffer.Height;
+                    Buffer.Pitch = GlobalBackbuffer.Pitch;
+                    Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
+
+                    if (App.UpdateAndRender) {
+                        App.UpdateAndRender(&AppMemory, NewInput, &Buffer);
+                    }
+
+                    napms(100);
+
+                    uint64_t EndCycleCount = rdtsc();
+                    uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
+
+                    int64_t WorkTime = LinuxGetWallClock();
+                    float WorkSecondsElapsed = LinuxGetSecondsElapsed(LastTime, WorkTime);
+
+                    float SecondsElapsedForFrame = WorkSecondsElapsed;
+                    if (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
+
+                        while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
+                            uint64_t SleepNs = (uint64_t)(1000000.0f * (TargetSecondsElapsedPerFrame - SecondsElapsedForFrame));
+                            LinuxSleepNs(SleepNs);
+                            SecondsElapsedForFrame = LinuxGetSecondsElapsed(LastTime, LinuxGetWallClock());
+                        }
                     }
                     else {
-                        // TODO: (marco) logging
-                    }
-                }
-
-                app_keyboard_input *OldKeyboard = OldInput;
-                app_keyboard_input *NewKeyboard = NewInput;
-
-                KeyPressed = getch();
-
-                if (KeyPressed == 'q') {
-                    GlobalRunning = 0;
-                }
-                else if (KeyPressed == 27) {
-                    nodelay(stdscr, TRUE);
-
-                    int next = getch();
-                    if (next == ERR) {
-                        // NOTE: (marco) real esc is pressed - handled below
+                        // TODO: (marco) MISSED A FRAME!!
+                        // TODO: (marco) Logging
                     }
 
-                    else {
-                        ungetch(next);
-                        ungetch(27);
-                    }
-                }
-                LinuxProcessKeyboardButton(&OldKeyboard->Up, &NewKeyboard->Up, KeyPressed, KEY_UP);
-                LinuxProcessKeyboardButton(&OldKeyboard->Down, &NewKeyboard->Down, KeyPressed, KEY_DOWN);
-                LinuxProcessKeyboardButton(&OldKeyboard->Left, &NewKeyboard->Left, KeyPressed, KEY_LEFT);
-                LinuxProcessKeyboardButton(&OldKeyboard->Right, &NewKeyboard->Right, KeyPressed, KEY_RIGHT);
-                LinuxProcessKeyboardButton(&OldKeyboard->Select, &NewKeyboard->Select, KeyPressed, KEY_ENTER);
-                LinuxProcessKeyboardButton(&OldKeyboard->Back, &NewKeyboard->Back, KeyPressed, KEY_BACKSPACE);
-                LinuxProcessKeyboardButton(&OldKeyboard->Help, &NewKeyboard->Help, KeyPressed, KEY_F(1));
-
-                app_offscreen_buffer Buffer = { };
-                Buffer.Memory = GlobalBackbuffer.Memory;
-                Buffer.Width = GlobalBackbuffer.Width;
-                Buffer.Height = GlobalBackbuffer.Height;
-                Buffer.Pitch = GlobalBackbuffer.Pitch;
-                color_gradient_info ColorInfo = { };
-                ColorInfo.ColorBase = GlobalColorGradientInfo.ColorBase;
-                ColorInfo.ColorSteps = GlobalColorGradientInfo.ColorSteps;
-
-                if (App.UpdateAndRender) {
-                    App.UpdateAndRender(&AppMemory, NewInput, &Buffer, &ColorInfo);
-                }
-                LinuxUpdateGradient(&ColorInfo);
-
-                napms(100);
-
-                uint64_t EndCycleCount = rdtsc();
-                uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
-
-                int64_t WorkTime = LinuxGetWallClock();
-                float WorkSecondsElapsed = LinuxGetSecondsElapsed(LastTime, WorkTime);
-
-                float SecondsElapsedForFrame = WorkSecondsElapsed;
-                if (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
-
-                    while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame) {
-                        uint64_t SleepNs = (uint64_t)(1000000.0f * (TargetSecondsElapsedPerFrame - SecondsElapsedForFrame));
-                        LinuxSleepNs(SleepNs);
-                        SecondsElapsedForFrame = LinuxGetSecondsElapsed(LastTime, LinuxGetWallClock());
-                    }
-                }
-                else {
-                    // TODO: (marco) MISSED A FRAME!!
-                    // TODO: (marco) Logging
-                }
-
-                LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
+                    LinuxPresentBuffer(&GlobalBackbuffer, WindowSize.ws_col, WindowSize.ws_row);
 #if 0
                 float MsPerFrame = (float)NsPerFrame / 1000000.0f;
                 float FPS = 1000.0f / MsPerFrame;
@@ -398,21 +406,25 @@ int main() {
             refresh();
 #endif
 
-                app_keyboard_input *Temp = NewInput;
-                NewInput = OldInput;
-                OldInput = Temp;
+                    app_keyboard_input *Temp = NewInput;
+                    NewInput = OldInput;
+                    OldInput = Temp;
 
-                int64_t EndTime = LinuxGetWallClock();
-                LastCycleCount = EndCycleCount;
-                LastTime = EndTime;
+                    int64_t EndTime = LinuxGetWallClock();
+                    LastCycleCount = EndCycleCount;
+                    LastTime = EndTime;
+                }
+            }
+            else {
+                // TODO: (marco) Logging
             }
         }
         else {
-            // TODO: (marco) Logging
+            // TODO:(marco) Logging
         }
     }
     else {
-        // TODO:(marco) Logging
+        // TODO:(marco) Logging no colors
     }
     endwin();
     return 0;

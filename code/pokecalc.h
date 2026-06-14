@@ -119,7 +119,7 @@ struct app_memory {
     debug_platform_write_entire_file *DEBUGPlatformWriteEntireFile;
 };
 
-#define APP_UPDATE_AND_RENDER(name) void name(app_memory *AppMemory, app_keyboard_input *Input, app_offscreen_buffer *Buffer, color_gradient_info *ColorGradientInfo)
+#define APP_UPDATE_AND_RENDER(name) void name(app_memory *AppMemory, app_keyboard_input *Input, app_offscreen_buffer *Buffer)
 typedef APP_UPDATE_AND_RENDER(app_update_and_render);
 
 //
