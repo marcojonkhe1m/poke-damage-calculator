@@ -10,6 +10,7 @@
    - alas, streak again
    - dr streak i presume
    - streak
+   - the return of the streaky comment
 */
 #include "pokecalc.h"
 
