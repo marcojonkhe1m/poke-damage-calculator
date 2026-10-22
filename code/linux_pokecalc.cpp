@@ -11,6 +11,7 @@
    - dr streak i presume
    - streak
    - the return of the streaky comment
+   - another day, another streak comment
 */
 #include "pokecalc.h"
 
