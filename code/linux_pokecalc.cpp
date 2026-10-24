@@ -13,6 +13,7 @@
    - the return of the streaky comment
    - another day, another streak comment
    - gotta streak
+   - omdat go niet mee werkt
 */
 #include "pokecalc.h"
 
