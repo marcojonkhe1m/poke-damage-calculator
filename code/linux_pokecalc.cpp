@@ -14,6 +14,7 @@
    - another day, another streak comment
    - gotta streak
    - omdat go niet mee werkt
+   - getting streaky with it
 */
 #include "pokecalc.h"
 
