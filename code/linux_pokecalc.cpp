@@ -15,6 +15,7 @@
    - gotta streak
    - omdat go niet mee werkt
    - getting streaky with it
+   - geen house maar streak
 */
 #include "pokecalc.h"
 
