@@ -16,6 +16,7 @@
    - omdat go niet mee werkt
    - getting streaky with it
    - geen house maar streak
+   - today is a day of streak
 */
 #include "pokecalc.h"
 
