@@ -17,6 +17,7 @@
    - getting streaky with it
    - geen house maar streak
    - today is a day of streak
+   - I did code but still need streak
 */
 #include "pokecalc.h"
 
