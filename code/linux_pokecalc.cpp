@@ -18,6 +18,7 @@
    - geen house maar streak
    - today is a day of streak
    - I did code but still need streak
+   - first of the month streak
 */
 #include "pokecalc.h"
 
