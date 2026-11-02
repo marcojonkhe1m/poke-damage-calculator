@@ -19,6 +19,7 @@
    - today is a day of streak
    - I did code but still need streak
    - first of the month streak
+   - made progress
 */
 #include "pokecalc.h"
 
