@@ -20,6 +20,7 @@
    - I did code but still need streak
    - first of the month streak
    - made progress
+   - state streak
 */
 #include "pokecalc.h"
 
