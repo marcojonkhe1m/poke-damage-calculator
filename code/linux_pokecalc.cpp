@@ -21,6 +21,7 @@
    - first of the month streak
    - made progress
    - state streak
+   - streakers
 */
 #include "pokecalc.h"
 
