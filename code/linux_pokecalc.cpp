@@ -22,6 +22,7 @@
    - made progress
    - state streak
    - streakers
+   - streaky steez
 */
 #include "pokecalc.h"
 
