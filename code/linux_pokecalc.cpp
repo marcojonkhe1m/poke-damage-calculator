@@ -23,6 +23,7 @@
    - state streak
    - streakers
    - streaky steez
+   - some streak
 */
 #include "pokecalc.h"
 
