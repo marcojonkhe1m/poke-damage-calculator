@@ -24,6 +24,7 @@
    - streakers
    - streaky steez
    - some streak
+   - steak?! no, streak!!
 */
 #include "pokecalc.h"
 
