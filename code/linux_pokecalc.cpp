@@ -25,6 +25,7 @@
    - streaky steez
    - some streak
    - steak?! no, streak!!
+   - started the map command
 */
 #include "pokecalc.h"
 
