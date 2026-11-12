@@ -27,6 +27,7 @@
    - steak?! no, streak!!
    - started the map command
    - streakway to heaven
+   - unmarshal streak
 */
 #include "pokecalc.h"
 
