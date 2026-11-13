@@ -28,6 +28,7 @@
    - started the map command
    - streakway to heaven
    - unmarshal streak
+   - other priorities
 */
 #include "pokecalc.h"
 
