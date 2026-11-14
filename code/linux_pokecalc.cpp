@@ -29,6 +29,7 @@
    - streakway to heaven
    - unmarshal streak
    - other priorities
+   - forever streak
 */
 #include "pokecalc.h"
 
