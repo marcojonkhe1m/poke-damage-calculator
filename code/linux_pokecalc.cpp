@@ -30,6 +30,7 @@
    - unmarshal streak
    - other priorities
    - forever streak
+   - monday night streak
 */
 #include "pokecalc.h"
 
