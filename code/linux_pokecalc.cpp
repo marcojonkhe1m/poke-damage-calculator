@@ -31,6 +31,7 @@
    - other priorities
    - forever streak
    - monday night streak
+   - birthday
 */
 #include "pokecalc.h"
 
