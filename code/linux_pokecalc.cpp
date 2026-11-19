@@ -33,6 +33,7 @@
    - monday night streak
    - birthday
    - wow streak
+   - syrian streak
 */
 #include "pokecalc.h"
 
